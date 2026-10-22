@@ -1,6 +1,6 @@
 # Φ PhiOS XR
 
-**The Sovereign Spatial Shell · Edition 01**
+**The Sovereign Spatial Shell · Edition 02**
 
 An experimental, open-source WebXR workspace for Quest 3 and other compatible browsers. PhiOS XR is a **separate user interface**, not a replacement for Meta Horizon OS, and not an installation of the PhiOS x86_64 Linux image.
 
@@ -54,7 +54,7 @@ The browser page has **no host-process execution**, no PhiOS lease issuance, no 
 
 ## Roadmap
 
-- **Edition 01 (this PR)**: 3D spatial dashboard + 2D accessible fallback, VR/MR entry, controller selection, optional hand-select hooks, read-only catalog, tests, CI and Pages build.
+- **Edition 01 (merged)**: 3D spatial dashboard + 2D accessible fallback, VR/MR entry, controller selection, optional hand-select hooks, read-only catalog, tests, CI and Pages build.
 - **Edition 02**: Quest device acceptance and better input feedback, session exit UI, reposition/scale panels, performance budgets, WebXR Layers study.
 - **Edition 03**: Read-only authenticated PhiOS bridge (only after separate capability/authority design and threat review).
 - **Edition 04**: Stateful spatial workspaces and deeper Field Atlas / Constellation components.
@@ -71,3 +71,16 @@ Meta mixed reality: https://developers.meta.com/vr/documentation/web/webxr-mixed
 ## License
 
 MIT. PhiOS XR is independent of Meta and is not a Meta product.
+
+## Edition 02 Quest interaction upgrade
+
+Two controls now exist **inside** the immersive environment, alongside the lower information panel:
+
+- **RE-CENTER** moves the workspace ahead of your current direction at a height matched to your head.
+- **EXIT XR** ends the WebXR session, returning to the ordinary browser page.
+
+The XR target rays now have visible controller lasers and reticles. Hovered portals and action panels enlarge slightly. Press select to navigate or activate an in-world control.
+
+Controllers use the standard WebXR `select` event. Hand-tracked input may emit the same event in supported browser configurations. This remains **untested on Quest hardware** and cannot be claimed as universal pinch support. The desktop mouse continues to work, and auxiliary HTML buttons appear for session control where visible.
+
+Document real on-headset results in [the Quest acceptance checklist](docs/QUEST_ACCEPTANCE.md). Do not claim that VR, MR, hand input, physical performance, or stability is qualified from CI alone.
