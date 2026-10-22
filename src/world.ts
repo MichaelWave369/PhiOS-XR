@@ -3,6 +3,9 @@ import { portals } from './catalog'
 import type { ImmersiveMode } from './capabilities'
 import { calculateWorkspaceAnchor } from './layout'
 import { clearWorkspace, clampPanelSize, clampPosition, loadWorkspace, presetPanels, saveWorkspace, type LayoutPreset } from './workspace'
+import { applyPadKey, elapsedClock, formatClock, loadPad, newClock, pauseClock, sanitizeNote, savePad, startClock, type ClockState } from './fieldtools'
+export type ViewMode = 'portals' | 'tools'
+export type ClockDisplay = { time: string; running: boolean }
 
 export type SpatialShell = {
   enter: (mode: ImmersiveMode) => Promise<void>
@@ -11,6 +14,9 @@ export type SpatialShell = {
   exit: () => Promise<void>
   arrange: (preset: LayoutPreset) => void
   reset: () => void
+  setView: (mode: ViewMode) => void
+  setNote: (value: string) => void
+  clockAction: (action: 'toggle' | 'reset') => void
   dispose: () => void
 }
 
@@ -18,6 +24,9 @@ type ShellCallbacks = {
   onSelect: (id: string) => void
   onSession: (mode: ImmersiveMode | null) => void
   onLayout: (preset: LayoutPreset) => void
+  onView: (mode: ViewMode) => void
+  onNote: (note: string) => void
+  onClock: (state: ClockDisplay) => void
 }
 
 /** Canvas textures make the same panels usable in desktop preview and inside the headset. */
@@ -94,7 +103,7 @@ function headingTexture() {
     ctx.fillText('Φ  PhiOS  XR', w / 2, 303)
     ctx.fillStyle = gold
     ctx.font = '32px monospace'
-    ctx.fillText('THE SOVEREIGN SPATIAL SHELL   /   EDITION 03', w / 2, 390)
+    ctx.fillText('THE SOVEREIGN SPATIAL SHELL   /   EDITION 04', w / 2, 390)
   })
 }
 
@@ -255,11 +264,13 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
 
   // WebXR renders the canvas, not the surrounding HTML; add in-headset controls.
   const controls = [
-    { action: 'arc', label: 'ARC', hint: 'CURVED', y: 2.49 },
-    { action: 'wall', label: 'WALL', hint: 'FLAT GRID', y: 2.02 },
-    { action: 'reset', label: 'RESET', hint: 'RECOVER', y: 1.55 },
-    { action: 'recenter', label: 'RE-CENTER', hint: 'FACE FORWARD', y: 1.08 },
-    { action: 'exit', label: 'EXIT XR', hint: 'END SESSION', y: 0.61 },
+    { action: 'portals', label: 'PORTALS', hint: 'PROJECTS', y: 2.93 },
+    { action: 'tools', label: 'TOOLS', hint: 'LIVE APPS', y: 2.55 },
+    { action: 'arc', label: 'ARC', hint: 'CURVED', y: 2.17 },
+    { action: 'wall', label: 'WALL', hint: 'FLAT GRID', y: 1.79 },
+    { action: 'reset', label: 'RESET', hint: 'RECOVER', y: 1.41 },
+    { action: 'recenter', label: 'RE-CENTER', hint: 'FACE FORWARD', y: 1.03 },
+    { action: 'exit', label: 'EXIT XR', hint: 'END SESSION', y: 0.65 },
   ] as const
   const actionPanels = controls.map(({ action, label, hint, y }) => {
     const control = plane(actionTexture(label, hint), 0.78, 0.35)
@@ -268,7 +279,124 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     workspace.add(control)
     return control
   })
-  const targets: THREE.Mesh[] = [...cards, ...resizeHandles, ...actionPanels]
+  // First-party spatial tools are interactive WebGL surfaces, not embedded websites.
+  const toolGroup = new THREE.Group()
+  toolGroup.visible = false
+  workspace.add(toolGroup)
+  let view: ViewMode = 'portals'
+  let note = loadPad()
+  let clock: ClockState = newClock()
+  let lastClockText = '00:00'
+
+  function miniTexture(label: string, accent = false) {
+    const canvas = document.createElement('canvas')
+    canvas.width = 256
+    canvas.height = 128
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('2D canvas unavailable')
+    ctx.fillStyle = accent ? '#315d60' : '#183744'
+    ctx.fillRect(2, 2, 252, 124)
+    ctx.strokeStyle = accent ? '#e7c78c' : '#79c6c6'
+    ctx.lineWidth = 6
+    ctx.strokeRect(4, 4, 248, 120)
+    ctx.fillStyle = '#edfaf8'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.font = '700 54px system-ui'
+    ctx.fillText(label, 128, 64, 234)
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.colorSpace = THREE.SRGBColorSpace
+    return texture
+  }
+  function drawRows(ctx: CanvasRenderingContext2D, text: string, width: number) {
+    ctx.font = '32px monospace'
+    const rows: string[] = []
+    for (const paragraph of text.split('\n')) {
+      let line = ''
+      for (const character of paragraph) {
+        if (ctx.measureText(line + character).width > width) {
+          rows.push(line)
+          line = ''
+        }
+        line += character
+      }
+      rows.push(line)
+    }
+    for (const [index, line] of rows.slice(0, 10).entries()) {
+      ctx.fillText(line, 48, 207 + index * 38)
+    }
+  }
+  function noteTexture() {
+    return makeTexture((ctx, w, h) => {
+      ctx.fillStyle = '#102634'
+      ctx.fillRect(0, 0, w, h)
+      ctx.strokeStyle = '#4d8f91'
+      ctx.lineWidth = 8
+      ctx.strokeRect(10, 10, w - 20, h - 20)
+      ctx.fillStyle = '#82e6da'
+      ctx.font = '700 48px monospace'
+      ctx.fillText('FIELD PAD / LOCAL', 48, 78)
+      ctx.fillStyle = '#b1d7d5'
+      ctx.font = '26px monospace'
+      ctx.fillText('NO SYNC  ·  NO MODEL  ·  NO EXECUTION', 48, 126)
+      ctx.fillStyle = '#f1f9f7'
+      drawRows(ctx, note || 'SELECT KEYS BELOW TO WRITE…', w - 92)
+      ctx.fillStyle = '#e1c18a'
+      ctx.font = '25px monospace'
+      ctx.fillText('FIELD NOTES / ' + note.length + ' OF 240', 48, h - 30)
+    })
+  }
+  function clockTexture(time: string) {
+    return makeTexture((ctx, w, h) => {
+      ctx.fillStyle = '#0e2630'
+      ctx.fillRect(0, 0, w, h)
+      ctx.strokeStyle = '#8c875f'
+      ctx.lineWidth = 8
+      ctx.strokeRect(10, 10, w - 20, h - 20)
+      ctx.fillStyle = '#d9c188'
+      ctx.font = '700 48px monospace'
+      ctx.fillText('FOCUS CLOCK / LOCAL', 48, 78)
+      ctx.fillStyle = '#719fa9'
+      ctx.font = '29px monospace'
+      ctx.fillText('MONOTONIC ELAPSED TIME', 48, 132)
+      ctx.fillStyle = '#e9fff8'
+      ctx.textAlign = 'center'
+      ctx.font = '700 144px monospace'
+      ctx.fillText(time, w / 2, 336, w - 80)
+      ctx.fillStyle = clock.startedAt === null ? '#d9bd85' : '#80e3c3'
+      ctx.font = '700 30px monospace'
+      ctx.fillText(clock.startedAt === null ? 'PAUSED' : 'RUNNING', w / 2, 420)
+      ctx.font = '25px monospace'
+      ctx.fillStyle = '#91abb1'
+      ctx.fillText('NO BACKGROUND REMINDERS', w / 2, h - 34)
+    })
+  }
+  const noteBoard = plane(noteTexture(), 1.76, 1.1)
+  noteBoard.position.set(-0.94, 2.05, -2.5)
+  toolGroup.add(noteBoard)
+  const clockBoard = plane(clockTexture('00:00'), 1.76, 1.1)
+  clockBoard.position.set(0.94, 2.05, -2.5)
+  toolGroup.add(clockBoard)
+  const keyMeshes: THREE.Mesh[] = []
+  const addKey = (label: string, x: number, y: number, width: number, app: 'pad' | 'clock') => {
+    const key = plane(miniTexture(label, app === 'clock'), width, 0.17)
+    key.position.set(x, y, -2.43)
+    key.userData[app === 'pad' ? 'padKey' : 'clockAction'] = label
+    toolGroup.add(key)
+    keyMeshes.push(key)
+  }
+  for (const [rowIndex, row] of ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'].entries()) {
+    for (let index = 0; index < row.length; index++) {
+      addKey(row[index], -0.97 + (index - (row.length - 1) / 2) * 0.235, 1.28 - rowIndex * 0.205, 0.215, 'pad')
+    }
+  }
+  addKey('SPACE', -1.47, 0.64, 0.50, 'pad')
+  addKey('ENTER', -0.87, 0.64, 0.48, 'pad')
+  addKey('DELETE', -0.26, 0.64, 0.52, 'pad')
+  addKey('CLEAR', 0.35, 0.64, 0.46, 'pad')
+  addKey('TOGGLE', 1.07, 1.28, 0.48, 'clock')
+  addKey('RESET', 1.64, 1.28, 0.48, 'clock')
+  const targets: THREE.Mesh[] = [...cards, ...resizeHandles, ...actionPanels, ...keyMeshes]
 
   const raycaster = new THREE.Raycaster()
   const rotation = new THREE.Matrix4()
@@ -357,19 +485,60 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     }
     positionHandle(cards.indexOf(card))
   }
+  function setView(mode: ViewMode) {
+    view = mode
+    toolGroup.visible = mode === 'tools'
+    details.visible = mode === 'portals'
+    cards.forEach((card) => { card.visible = mode === 'portals' })
+    resizeHandles.forEach((handle) => { handle.visible = mode === 'portals' })
+    callbacks.onView(view)
+  }
+  function setNote(text: string) {
+    const next = sanitizeNote(text)
+    if (next === note) return
+    note = next
+    const material = noteBoard.material as THREE.MeshBasicMaterial
+    material.map?.dispose()
+    material.map = noteTexture()
+    material.needsUpdate = true
+    savePad(note)
+    callbacks.onNote(note)
+  }
+  function updateClockTexture(time: string) {
+    const material = clockBoard.material as THREE.MeshBasicMaterial
+    material.map?.dispose()
+    material.map = clockTexture(time)
+    material.needsUpdate = true
+    callbacks.onClock({ time, running: clock.startedAt !== null })
+  }
+  function clockAction(action: 'toggle' | 'reset') {
+    const now = performance.now()
+    if (action === 'reset') clock = newClock()
+    else if (clock.startedAt !== null) clock = pauseClock(clock, now)
+    else clock = startClock(clock, now)
+    lastClockText = formatClock(elapsedClock(clock, now))
+    updateClockTexture(lastClockText)
+  }
   const xrDrags = new Map<THREE.Group, Drag>()
   type Pointer = { controller: THREE.Group; beam: THREE.Line; reticle: THREE.Mesh }
   const pointers: Pointer[] = []
   const hitFrom = (controller: THREE.Group) => {
     controller.updateMatrixWorld(true)
     raycasterFrom(controller)
-    return raycaster.intersectObjects(targets, false)[0]
+    return raycaster.intersectObjects(targets.filter(mesh => mesh.visible && mesh.parent?.visible !== false), false)[0]
   }
 
   function activateTarget(object: THREE.Object3D) {
     const id = object.userData.portalId as string | undefined
     const action = object.userData.action as string | undefined
-    if (id) activate(id)
+    const padKey = object.userData.padKey as string | undefined
+    const timerKey = object.userData.clockAction as string | undefined
+    if (padKey) setNote(applyPadKey(note, padKey))
+    else if (timerKey === 'TOGGLE') clockAction('toggle')
+    else if (timerKey === 'RESET') clockAction('reset')
+    else if (id) activate(id)
+    else if (action === 'tools') setView('tools')
+    else if (action === 'portals') setView('portals')
     else if (action === 'arc') arrange('arc')
     else if (action === 'wall') arrange('wall')
     else if (action === 'reset') reset()
@@ -412,7 +581,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     controller.addEventListener('select', () => {
       if (!renderer.xr.isPresenting || xrDrags.has(controller)) return
       const hit = hitFrom(controller)
-      if (hit?.object.userData.action) activateTarget(hit.object)
+      if (hit && (hit.object.userData.action || hit.object.userData.padKey || hit.object.userData.clockAction)) activateTarget(hit.object)
     })
     scene.add(controller)
     pointers.push({ controller, beam, reticle })
@@ -457,7 +626,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     if (renderer.xr.isPresenting || event.button !== 0) return
     rayFromPointer(event)
     scene.updateMatrixWorld(true)
-    const hit = raycaster.intersectObjects(targets, false)[0]
+    const hit = raycaster.intersectObjects(targets.filter(mesh => mesh.visible && mesh.parent?.visible !== false), false)[0]
     if (!hit) return
     const id = (hit.object.userData.portalId ?? hit.object.userData.resizeId) as string | undefined
     if (id) activate(id)
@@ -466,7 +635,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       desktopDrag = { id: event.pointerId, drag }
       renderer.domElement.setPointerCapture(event.pointerId)
       event.preventDefault()
-    } else if (hit.object.userData.action) activateTarget(hit.object)
+    } else activateTarget(hit.object)
   }
   function onPointerMove(event: PointerEvent) {
     if (!desktopDrag || event.pointerId !== desktopDrag.id || renderer.xr.isPresenting) return
@@ -524,6 +693,11 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
 
   renderer.setAnimationLoop((time) => {
     if (decor.visible) halo.rotation.z = Math.sin(time / 9000) * 0.06
+    const displayTime = formatClock(elapsedClock(clock, time))
+    if (displayTime !== lastClockText) {
+      lastClockText = displayTime
+      updateClockTexture(displayTime)
+    }
     const hovered = new Set<THREE.Object3D>()
     if (renderer.xr.isPresenting) {
       scene.updateMatrixWorld(true)
@@ -627,5 +801,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   }
 
   callbacks.onLayout(activePreset)
-  return { enter, select: setSelected, recenter, exit, arrange, reset, dispose }
+  callbacks.onView(view)
+  callbacks.onNote(note)
+  callbacks.onClock({ time: lastClockText, running: false })
+  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, dispose }
 }

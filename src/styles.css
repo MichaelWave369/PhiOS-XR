@@ -14,3 +14,16 @@
 .layout-action:hover{background:#1a4750}
 .world-canvas{touch-action:none}
 @media(max-width:750px){.layout-strip{padding:11px 9px}.layout-action{padding:9px 12px}}
+
+/* Edition 04: accessible 2D companions for first-party immersive tools. */
+.field-view-switch{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:9px;padding:12px 14px;border:1px solid #2b4952;background:#0b2831}
+.field-view-switch strong,.field-tools-editor strong{display:block;color:#e0f7f1;font:700 11px ui-monospace,monospace;letter-spacing:.12em}
+.field-view-switch small,.field-tools-editor strong span{display:block;margin-top:6px;color:#83adb4;font:500 9px ui-monospace,monospace;letter-spacing:.06em}
+.field-tools-editor{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:9px}
+.field-pad-editor,.field-clock-editor{min-width:0;border:1px solid #32515a;background:#0a2531;padding:13px;display:flex;flex-direction:column;gap:10px}
+.field-pad-editor textarea{min-width:0;width:100%;max-width:100%;resize:vertical;padding:10px 12px;background:#061a27;border:1px solid #43646d;color:#e5f8f5;font:13px/1.5 ui-monospace,monospace}
+.field-pad-editor textarea:focus-visible{outline:2px solid #89e2d9}
+.field-clock-editor{justify-content:space-between}
+.clock-controls{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.clock-value{font:700 26px ui-monospace,monospace;letter-spacing:.06em;color:#e7d7a6;margin-right:auto}
+@media(max-width:750px){.field-tools-editor{grid-template-columns:1fr}.field-view-switch{padding:11px 9px}.clock-value{font-size:23px}}

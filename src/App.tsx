@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { detectXRSupport, type ImmersiveMode, type XRAvailability } from './capabilities'
 import { getPortal, portals } from './catalog'
 import type { LayoutPreset } from './workspace'
-import { createSpatialShell, type SpatialShell } from './world'
+import { createSpatialShell, type ClockDisplay, type SpatialShell, type ViewMode } from './world'
+import { MAX_NOTE_CHARS } from './fieldtools'
 
 const GITHUB = 'https://github.com/MichaelWave369/PhiOS-XR'
 
@@ -11,6 +12,9 @@ export function App() {
   const shellRef = useRef<SpatialShell | null>(null)
   const [selectedId, setSelectedId] = useState('phios')
   const [layout, setLayout] = useState<LayoutPreset>('arc')
+  const [view, setView] = useState<ViewMode>('portals')
+  const [fieldNote, setFieldNote] = useState('')
+  const [clockDisplay, setClockDisplay] = useState<ClockDisplay>({ time: '00:00', running: false })
   const [support, setSupport] = useState<XRAvailability | null>(null)
   const [sessionMode, setSessionMode] = useState<ImmersiveMode | null>(null)
   const [error, setError] = useState('')
@@ -25,6 +29,9 @@ export function App() {
         onSelect: setSelectedId,
         onSession: setSessionMode,
         onLayout: setLayout,
+        onView: setView,
+        onNote: setFieldNote,
+        onClock: setClockDisplay,
       })
       shellRef.current = shell
     } catch (err) {
@@ -64,7 +71,7 @@ export function App() {
           <span className="identity-mark">Φ</span>
           <span className="identity-copy"><strong>PHIOS <em>XR</em></strong><small>THE SOVEREIGN SPATIAL SHELL</small></span>
         </a>
-        <div className="topbar-mid"><span className="status-pulse" /> EDITION 03 <span className="divider">/</span> EXPERIMENTAL PREVIEW</div>
+        <div className="topbar-mid"><span className="status-pulse" /> EDITION 04 <span className="divider">/</span> EXPERIMENTAL PREVIEW</div>
         <a className="source-link" href={GITHUB} target="_blank" rel="noopener noreferrer">SOURCE CODE <span aria-hidden="true">↗</span></a>
       </header>
 
@@ -98,12 +105,12 @@ export function App() {
             <div className="stage-centerpiece" aria-hidden="true"><span>Φ</span></div>
             <div className="stage-overlay-top" aria-hidden="true">LIVE SPATIAL INTERFACE <span>///</span> READING MODE</div>
             <div className="stage-overlay-bottom" aria-hidden="true">
-              <span>◈ SIX MOVABLE PANELS</span>
+              <span>◈ MOVABLE PORTALS / LIVE FIELD TOOLS</span>
               <span>RENDERING / THREE.JS / WEBXR</span>
             </div>
           </div>
           <div className="transport">
-            <div className="transport-text"><strong>ENTER THE FIELD</strong><span>Drag panels to move · Gold corner to resize · XR hold select where supported</span></div>
+            <div className="transport-text"><strong>ENTER THE FIELD</strong><span>{view === 'portals' ? 'Drag panels to move · Gold corner to resize' : 'Select spatial keys to write · Start or pause the clock'}</span></div>
             <div className="transport-buttons">
               <button className="mode-button vr" onClick={() => void enter('immersive-vr')} disabled={!support?.vr || !!sessionMode || !!sceneError}>
                 <span>◉</span> ENTER VR
@@ -122,6 +129,35 @@ export function App() {
               </button>
             </div>
           </div>
+          <div className="field-view-switch" role="group" aria-label="Spatial workspace mode">
+            <div><strong>SPATIAL SURFACES</strong><small>PORTALS / FIRST-PARTY TOOLS</small></div>
+            <div className="layout-actions">
+              <button className={view === 'portals' ? 'layout-action is-active' : 'layout-action'}
+                aria-pressed={view === 'portals'}
+                onClick={() => shellRef.current?.setView('portals')}>PORTALS</button>
+              <button className={view === 'tools' ? 'layout-action is-active' : 'layout-action'}
+                aria-pressed={view === 'tools'}
+                onClick={() => shellRef.current?.setView('tools')}>FIELD TOOLS</button>
+            </div>
+          </div>
+          {view === 'tools' && <div className="field-tools-editor">
+            <label className="field-pad-editor">
+              <strong>FIELD PAD <span>LOCAL / {fieldNote.length} OF {MAX_NOTE_CHARS}</span></strong>
+              <textarea value={fieldNote} maxLength={MAX_NOTE_CHARS} rows={3}
+                onChange={(event) => shellRef.current?.setNote(event.target.value)}
+                placeholder="Write a note here or use the spatial keyboard inside VR." />
+            </label>
+            <div className="field-clock-editor">
+              <strong>FOCUS CLOCK <span>SESSION ONLY</span></strong>
+              <div className="clock-controls">
+                <span className="clock-value">{clockDisplay.time}</span>
+                <button className="layout-action" onClick={() => shellRef.current?.clockAction('toggle')}>
+                  {clockDisplay.running ? 'PAUSE' : 'START'}
+                </button>
+                <button className="layout-action" onClick={() => shellRef.current?.clockAction('reset')}>RESET</button>
+              </div>
+            </div>
+          </div>}
           <div className="layout-strip" aria-label="Workspace arrangement">
             <span className="layout-label">WORKSPACE / {layout.toUpperCase()}</span>
             <div className="layout-actions">
