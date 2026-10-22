@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { detectXRSupport, type ImmersiveMode, type XRAvailability } from './capabilities'
 import { getPortal, portals } from './catalog'
+import type { LayoutPreset } from './workspace'
 import { createSpatialShell, type SpatialShell } from './world'
 
 const GITHUB = 'https://github.com/MichaelWave369/PhiOS-XR'
@@ -9,6 +10,7 @@ export function App() {
   const stageRef = useRef<HTMLDivElement>(null)
   const shellRef = useRef<SpatialShell | null>(null)
   const [selectedId, setSelectedId] = useState('phios')
+  const [layout, setLayout] = useState<LayoutPreset>('arc')
   const [support, setSupport] = useState<XRAvailability | null>(null)
   const [sessionMode, setSessionMode] = useState<ImmersiveMode | null>(null)
   const [error, setError] = useState('')
@@ -22,6 +24,7 @@ export function App() {
       const shell = createSpatialShell(stageRef.current, {
         onSelect: setSelectedId,
         onSession: setSessionMode,
+        onLayout: setLayout,
       })
       shellRef.current = shell
     } catch (err) {
@@ -61,7 +64,7 @@ export function App() {
           <span className="identity-mark">Φ</span>
           <span className="identity-copy"><strong>PHIOS <em>XR</em></strong><small>THE SOVEREIGN SPATIAL SHELL</small></span>
         </a>
-        <div className="topbar-mid"><span className="status-pulse" /> EDITION 02 <span className="divider">/</span> EXPERIMENTAL PREVIEW</div>
+        <div className="topbar-mid"><span className="status-pulse" /> EDITION 03 <span className="divider">/</span> EXPERIMENTAL PREVIEW</div>
         <a className="source-link" href={GITHUB} target="_blank" rel="noopener noreferrer">SOURCE CODE <span aria-hidden="true">↗</span></a>
       </header>
 
@@ -95,12 +98,12 @@ export function App() {
             <div className="stage-centerpiece" aria-hidden="true"><span>Φ</span></div>
             <div className="stage-overlay-top" aria-hidden="true">LIVE SPATIAL INTERFACE <span>///</span> READING MODE</div>
             <div className="stage-overlay-bottom" aria-hidden="true">
-              <span>◈ SIX SPATIAL PORTALS</span>
+              <span>◈ SIX MOVABLE PANELS</span>
               <span>RENDERING / THREE.JS / WEBXR</span>
             </div>
           </div>
           <div className="transport">
-            <div className="transport-text"><strong>ENTER THE FIELD</strong><span>Quest Browser · HTTPS required · Controller select / pinch where supported</span></div>
+            <div className="transport-text"><strong>ENTER THE FIELD</strong><span>Drag panels to move · Gold corner to resize · XR hold select where supported</span></div>
             <div className="transport-buttons">
               <button className="mode-button vr" onClick={() => void enter('immersive-vr')} disabled={!support?.vr || !!sessionMode || !!sceneError}>
                 <span>◉</span> ENTER VR
@@ -117,6 +120,16 @@ export function App() {
               }} disabled={!sessionMode}>
                 EXIT XR
               </button>
+            </div>
+          </div>
+          <div className="layout-strip" aria-label="Workspace arrangement">
+            <span className="layout-label">WORKSPACE / {layout.toUpperCase()}</span>
+            <div className="layout-actions">
+              <button className={layout === 'arc' ? 'layout-action is-active' : 'layout-action'}
+                onClick={() => shellRef.current?.arrange('arc')}>ARC</button>
+              <button className={layout === 'wall' ? 'layout-action is-active' : 'layout-action'}
+                onClick={() => shellRef.current?.arrange('wall')}>WALL</button>
+              <button className="layout-action" onClick={() => shellRef.current?.reset()}>RESET</button>
             </div>
           </div>
           <div className="session-feedback" role="status" aria-live="polite">

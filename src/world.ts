@@ -2,18 +2,22 @@ import * as THREE from 'three'
 import { portals } from './catalog'
 import type { ImmersiveMode } from './capabilities'
 import { calculateWorkspaceAnchor } from './layout'
+import { clearWorkspace, clampPanelSize, clampPosition, loadWorkspace, presetPanels, saveWorkspace, type LayoutPreset } from './workspace'
 
 export type SpatialShell = {
   enter: (mode: ImmersiveMode) => Promise<void>
   select: (id: string) => void
   recenter: () => void
   exit: () => Promise<void>
+  arrange: (preset: LayoutPreset) => void
+  reset: () => void
   dispose: () => void
 }
 
 type ShellCallbacks = {
   onSelect: (id: string) => void
   onSession: (mode: ImmersiveMode | null) => void
+  onLayout: (preset: LayoutPreset) => void
 }
 
 /** Canvas textures make the same panels usable in desktop preview and inside the headset. */
@@ -75,7 +79,7 @@ function portalTexture(index: number, selected: boolean) {
     ctx.stroke()
     ctx.font = '700 25px monospace'
     ctx.fillStyle = '#9bc5c7'
-    ctx.fillText('SELECT WITH CONTROLLER / PINCH', 65, 505, w - 125)
+    ctx.fillText('HOLD SELECT TO MOVE / CORNER TO SIZE', 65, 505, w - 125)
   })
 }
 
@@ -90,7 +94,7 @@ function headingTexture() {
     ctx.fillText('Φ  PhiOS  XR', w / 2, 303)
     ctx.fillStyle = gold
     ctx.font = '32px monospace'
-    ctx.fillText('THE SOVEREIGN SPATIAL SHELL   /   EDITION 02', w / 2, 390)
+    ctx.fillText('THE SOVEREIGN SPATIAL SHELL   /   EDITION 03', w / 2, 390)
   })
 }
 
@@ -205,23 +209,44 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   banner.position.set(0, 2.63, -2.45)
   workspace.add(banner)
 
+  const recovered = loadWorkspace()
+  let activePreset: LayoutPreset = recovered?.preset ?? 'arc'
+  const startingPanels = recovered?.panels ?? presetPanels('arc')
   const cards: THREE.Mesh[] = []
   const cardTextures: THREE.Texture[] = []
+  const resizeHandles: THREE.Mesh[] = []
   portals.forEach((portal, index) => {
-    const col = index % 3
-    const row = Math.floor(index / 3)
-    const theta = (col - 1) * 0.52
-    const distance = 2.54
     const texture = portalTexture(index, index === 0)
     cardTextures.push(texture)
     const card = plane(texture, 1.23, 0.79)
-    card.position.set(Math.sin(theta) * distance, row === 0 ? 1.96 : 1.02, -Math.cos(theta) * distance)
-    card.lookAt(0, 1.45, 0.15)
+    const state = startingPanels[index]
+    card.position.set(state.position.x, state.position.y, state.position.z)
+    if (activePreset === 'arc') card.lookAt(0, 1.45, 0.15)
+    card.scale.setScalar(state.scale)
     card.userData.portalId = portal.id
-    card.userData.baseScale = 1
     workspace.add(card)
     cards.push(card)
+
+    // A tangible bottom-right resize tab, separately hit-tested from the card.
+    const handle = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.19, 0.16),
+      new THREE.MeshBasicMaterial({ color: '#dcbf82', side: THREE.DoubleSide, depthTest: false }),
+    )
+    handle.userData.resizeId = portal.id
+    workspace.add(handle)
+    resizeHandles.push(handle)
   })
+
+  function positionHandle(index: number) {
+    const card = cards[index]
+    const handle = resizeHandles[index]
+    handle.quaternion.copy(card.quaternion)
+    handle.position.copy(card.position).add(
+      new THREE.Vector3(0.615 * card.scale.x, -0.395 * card.scale.y, 0.018)
+        .applyQuaternion(card.quaternion),
+    )
+  }
+  cards.forEach((_, index) => positionHandle(index))
 
   const details = plane(detailTexture('phios'), 1.85, 0.9)
   details.position.set(0, 0.19, -2.7)
@@ -230,18 +255,20 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
 
   // WebXR renders the canvas, not the surrounding HTML; add in-headset controls.
   const controls = [
-    { action: 'recenter', label: 'RE-CENTER', hint: 'FACE FORWARD', x: -1.48 },
-    { action: 'exit', label: 'EXIT XR', hint: 'END SESSION', x: 1.48 },
+    { action: 'arc', label: 'ARC', hint: 'CURVED', y: 2.49 },
+    { action: 'wall', label: 'WALL', hint: 'FLAT GRID', y: 2.02 },
+    { action: 'reset', label: 'RESET', hint: 'RECOVER', y: 1.55 },
+    { action: 'recenter', label: 'RE-CENTER', hint: 'FACE FORWARD', y: 1.08 },
+    { action: 'exit', label: 'EXIT XR', hint: 'END SESSION', y: 0.61 },
   ] as const
-  const actionPanels = controls.map(({ action, label, hint, x }) => {
-    const control = plane(actionTexture(label, hint), 0.84, 0.36)
-    control.position.set(x, 0.25, -2.55)
-    control.rotation.x = -0.12
+  const actionPanels = controls.map(({ action, label, hint, y }) => {
+    const control = plane(actionTexture(label, hint), 0.78, 0.35)
+    control.position.set(2.28, y, -2.55)
     control.userData.action = action
     workspace.add(control)
     return control
   })
-  const targets: THREE.Mesh[] = [...cards, ...actionPanels]
+  const targets: THREE.Mesh[] = [...cards, ...resizeHandles, ...actionPanels]
 
   const raycaster = new THREE.Raycaster()
   const rotation = new THREE.Matrix4()
@@ -254,6 +281,83 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     setSelected(id)
     callbacks.onSelect(id)
   }
+
+  function persist() {
+    saveWorkspace({
+      version: 1, preset: activePreset,
+      panels: cards.map((card, index) => ({
+        id: portals[index].id,
+        position: { x: card.position.x, y: card.position.y, z: card.position.z },
+        scale: card.scale.x,
+      })),
+    })
+  }
+
+  function arrange(preset: LayoutPreset, persistLayout = true) {
+    activePreset = preset
+    for (const [index, state] of presetPanels(preset).entries()) {
+      const card = cards[index]
+      card.position.set(state.position.x, state.position.y, state.position.z)
+      card.rotation.set(0, 0, 0)
+      if (preset === 'arc') card.lookAt(0, 1.45, 0.15)
+      card.scale.setScalar(1)
+      positionHandle(index)
+    }
+    callbacks.onLayout(preset)
+    if (persistLayout) persist()
+  }
+
+  function reset() {
+    clearWorkspace()
+    arrange('arc', false)
+  }
+
+  function cardForTarget(object: THREE.Object3D): THREE.Mesh | null {
+    const id = object.userData.portalId ?? object.userData.resizeId
+    const index = portals.findIndex((portal) => portal.id === id)
+    return index === -1 ? null : cards[index]
+  }
+
+  type Drag = {
+    card: THREE.Mesh
+    mode: 'move' | 'resize'
+    distance: number
+    startScale: number
+    startPoint: THREE.Vector3
+    right: THREE.Vector3
+    offset: THREE.Vector3
+    plane: THREE.Plane
+  }
+  function beginDrag(object: THREE.Object3D, hitPoint: THREE.Vector3, distance: number): Drag | null {
+    const card = cardForTarget(object)
+    if (!card) return null
+    const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(card.getWorldQuaternion(new THREE.Quaternion()))
+    const center = card.getWorldPosition(new THREE.Vector3())
+    return {
+      card,
+      mode: object.userData.resizeId ? 'resize' : 'move',
+      distance,
+      startScale: card.scale.x,
+      startPoint: hitPoint.clone(),
+      right: new THREE.Vector3(1, 0, 0).applyQuaternion(card.getWorldQuaternion(new THREE.Quaternion())),
+      offset: center.sub(hitPoint),
+      plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, card.getWorldPosition(new THREE.Vector3())),
+    }
+  }
+
+  function updateDrag(drag: Drag, point: THREE.Vector3) {
+    const card = drag.card
+    if (drag.mode === 'move') {
+      const local = workspace.worldToLocal(point.clone().add(drag.offset))
+      const limited = clampPosition(local)
+      card.position.set(limited.x, limited.y, limited.z)
+    } else {
+      const difference = point.clone().sub(drag.startPoint).dot(drag.right)
+      card.scale.setScalar(clampPanelSize(drag.startScale + difference * 1.4))
+    }
+    positionHandle(cards.indexOf(card))
+  }
+  const xrDrags = new Map<THREE.Group, Drag>()
   type Pointer = { controller: THREE.Group; beam: THREE.Line; reticle: THREE.Mesh }
   const pointers: Pointer[] = []
   const hitFrom = (controller: THREE.Group) => {
@@ -266,6 +370,9 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     const id = object.userData.portalId as string | undefined
     const action = object.userData.action as string | undefined
     if (id) activate(id)
+    else if (action === 'arc') arrange('arc')
+    else if (action === 'wall') arrange('wall')
+    else if (action === 'reset') reset()
     else if (action === 'recenter') recenter()
     else if (action === 'exit') void exit().catch(() => {})
   }
@@ -289,10 +396,23 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     )
     reticle.visible = false
     scene.add(reticle)
-    controller.addEventListener('select', () => {
+    controller.addEventListener('selectstart', () => {
       if (!renderer.xr.isPresenting) return
+      scene.updateMatrixWorld(true)
       const hit = hitFrom(controller)
-      if (hit) activateTarget(hit.object)
+      if (!hit) return
+      const id = (hit.object.userData.portalId ?? hit.object.userData.resizeId) as string | undefined
+      if (id) activate(id)
+      const drag = beginDrag(hit.object, hit.point, hit.distance)
+      if (drag) xrDrags.set(controller, drag)
+    })
+    controller.addEventListener('selectend', () => {
+      if (xrDrags.delete(controller)) persist()
+    })
+    controller.addEventListener('select', () => {
+      if (!renderer.xr.isPresenting || xrDrags.has(controller)) return
+      const hit = hitFrom(controller)
+      if (hit?.object.userData.action) activateTarget(hit.object)
     })
     scene.add(controller)
     pointers.push({ controller, beam, reticle })
@@ -324,18 +444,48 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   }
 
   const pointer = new THREE.Vector2()
-  function onPointerClick(event: MouseEvent) {
-    if (renderer.xr.isPresenting) return
+  let desktopDrag: { id: number; drag: Drag } | null = null
+  const rayFromPointer = (event: PointerEvent) => {
     const box = renderer.domElement.getBoundingClientRect()
     pointer.set(
       ((event.clientX - box.left) / box.width) * 2 - 1,
       -((event.clientY - box.top) / box.height) * 2 + 1,
     )
     raycaster.setFromCamera(pointer, camera)
-    const hit = raycaster.intersectObjects(targets, false)[0]
-    if (hit) activateTarget(hit.object)
   }
-  renderer.domElement.addEventListener('click', onPointerClick)
+  function onPointerDown(event: PointerEvent) {
+    if (renderer.xr.isPresenting || event.button !== 0) return
+    rayFromPointer(event)
+    scene.updateMatrixWorld(true)
+    const hit = raycaster.intersectObjects(targets, false)[0]
+    if (!hit) return
+    const id = (hit.object.userData.portalId ?? hit.object.userData.resizeId) as string | undefined
+    if (id) activate(id)
+    const drag = beginDrag(hit.object, hit.point, hit.distance)
+    if (drag) {
+      desktopDrag = { id: event.pointerId, drag }
+      renderer.domElement.setPointerCapture(event.pointerId)
+      event.preventDefault()
+    } else if (hit.object.userData.action) activateTarget(hit.object)
+  }
+  function onPointerMove(event: PointerEvent) {
+    if (!desktopDrag || event.pointerId !== desktopDrag.id || renderer.xr.isPresenting) return
+    rayFromPointer(event)
+    const position = raycaster.ray.intersectPlane(desktopDrag.drag.plane, new THREE.Vector3())
+    if (position) updateDrag(desktopDrag.drag, position)
+  }
+  function endPointer(event: PointerEvent) {
+    if (!desktopDrag || event.pointerId !== desktopDrag.id) return
+    desktopDrag = null
+    if (renderer.domElement.hasPointerCapture(event.pointerId)) {
+      renderer.domElement.releasePointerCapture(event.pointerId)
+    }
+    persist()
+  }
+  renderer.domElement.addEventListener('pointerdown', onPointerDown)
+  renderer.domElement.addEventListener('pointermove', onPointerMove)
+  renderer.domElement.addEventListener('pointerup', endPointer)
+  renderer.domElement.addEventListener('pointercancel', endPointer)
 
   function resize() {
     const width = Math.max(host.clientWidth, 1)
@@ -378,6 +528,18 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     if (renderer.xr.isPresenting) {
       scene.updateMatrixWorld(true)
       for (const pointer of pointers) {
+        const held = xrDrags.get(pointer.controller)
+        if (held) {
+          hitFrom(pointer.controller)
+          let point: THREE.Vector3 | null = null
+          if (held.mode === 'move') {
+            point = raycaster.ray.at(held.distance, new THREE.Vector3())
+          } else {
+            point = raycaster.ray.intersectPlane(held.plane, new THREE.Vector3())
+          }
+          if (point) updateDrag(held, point)
+        }
+        scene.updateMatrixWorld(true)
         const hit = hitFrom(pointer.controller)
         pointer.beam.visible = true
         pointer.beam.scale.z = hit ? Math.min(4, hit.distance) : 3.6
@@ -394,10 +556,15 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
         pointer.reticle.visible = false
       }
     }
-    cards.forEach((card) => card.scale.setScalar(
-      hovered.has(card) ? 1.08 : card.userData.portalId === selected ? 1.04 : 1,
-    ))
-    actionPanels.forEach((panel) => panel.scale.setScalar(hovered.has(panel) ? 1.10 : 1))
+    cards.forEach((card) => {
+      const material = card.material as THREE.MeshBasicMaterial
+      material.color.setHex(hovered.has(card) ? 0xc3fff1 : 0xffffff)
+    })
+    resizeHandles.forEach((handle) => {
+      const material = handle.material as THREE.MeshBasicMaterial
+      material.color.setHex(hovered.has(handle) ? 0xffffff : 0xdcbf82)
+    })
+    actionPanels.forEach((panel) => panel.scale.setScalar(hovered.has(panel) ? 1.08 : 1))
     renderer.render(scene, camera)
     // Render updates the XR camera pose. Apply recenter for the next frame.
     if (renderer.xr.isPresenting && pendingRecenter) {
@@ -417,6 +584,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       decor.visible = true
       workspace.position.set(0, 0, 0)
       workspace.rotation.set(0, 0, 0)
+      xrDrags.clear()
+      desktopDrag = null
       callbacks.onSession(null)
     })
     try {
@@ -437,7 +606,10 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   function dispose() {
     renderer.setAnimationLoop(null)
     observer.disconnect()
-    renderer.domElement.removeEventListener('click', onPointerClick)
+    renderer.domElement.removeEventListener('pointerdown', onPointerDown)
+    renderer.domElement.removeEventListener('pointermove', onPointerMove)
+    renderer.domElement.removeEventListener('pointerup', endPointer)
+    renderer.domElement.removeEventListener('pointercancel', endPointer)
     const session = renderer.xr.getSession()
     if (session) void session.end().catch(() => {})
     scene.traverse((object) => {
@@ -454,5 +626,6 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     renderer.domElement.remove()
   }
 
-  return { enter, select: setSelected, recenter, exit, dispose }
+  callbacks.onLayout(activePreset)
+  return { enter, select: setSelected, recenter, exit, arrange, reset, dispose }
 }

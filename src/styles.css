@@ -4,3 +4,13 @@
 .transport-buttons{flex-wrap:wrap;justify-content:flex-end}
 .transport-buttons .mode-button{min-height:42px}
 @media(max-width:850px){.transport-buttons{width:100%;justify-content:stretch}.transport-buttons .mode-button{flex:1 1 43%}}
+
+/* Edition 03: spatial layout controls */
+.layout-strip{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:12px 14px;margin-top:9px;border:1px solid #263f4a;background:#071825;flex-wrap:wrap}
+.layout-label{font:700 10px/1.4 ui-monospace,monospace;letter-spacing:.11em;color:#9dbfc4}
+.layout-actions{display:flex;align-items:center;gap:8px}
+.layout-action{border:1px solid #375e65;background:#0c2531;color:#aacfd2;padding:9px 15px;font:750 10px/1.2 ui-monospace,monospace;letter-spacing:.13em}
+.layout-action.is-active{background:#22535a;color:#eafff9;border-color:#8ae0ce}
+.layout-action:hover{background:#1a4750}
+.world-canvas{touch-action:none}
+@media(max-width:750px){.layout-strip{padding:11px 9px}.layout-action{padding:9px 12px}}

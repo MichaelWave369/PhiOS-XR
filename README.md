@@ -1,6 +1,6 @@
 # Φ PhiOS XR
 
-**The Sovereign Spatial Shell · Edition 02**
+**The Sovereign Spatial Shell · Edition 03**
 
 An experimental, open-source WebXR workspace for Quest 3 and other compatible browsers. PhiOS XR is a **separate user interface**, not a replacement for Meta Horizon OS, and not an installation of the PhiOS x86_64 Linux image.
 
@@ -84,3 +84,14 @@ The XR target rays now have visible controller lasers and reticles. Hovered port
 Controllers use the standard WebXR `select` event. Hand-tracked input may emit the same event in supported browser configurations. This remains **untested on Quest hardware** and cannot be claimed as universal pinch support. The desktop mouse continues to work, and auxiliary HTML buttons appear for session control where visible.
 
 Document real on-headset results in [the Quest acceptance checklist](docs/QUEST_ACCEPTANCE.md). Do not claim that VR, MR, hand input, physical performance, or stability is qualified from CI alone.
+
+
+## Edition 03: Spatial Window Manager
+
+Edition 03 introduces spatial **preview-panel** manipulation. On desktop, drag a panel with your mouse or pointer to move it; drag its gold corner handle to resize. On headsets, hold controller select over a panel or handle, move the ray and release. WebXR hand select may work on supported runtimes, but real Quest testing is still required.
+
+**ARC** and **WALL** presets rearrange the scene. **RESET** discards browser-saved placement, returning to ARC. A validated version-1 workspace snapshot is saved to the current browser's localStorage on successful manipulation, subject to browser storage permissions. Controls are duplicated in the immersive scene on the right-hand side and in the regular page.
+
+These are **not embedded websites**, remote desktop streams, OS windows, or privileged applications. Projects remain curated outbound links used from the 2D inspector after leaving XR. The UI has no PhiOS runtime authority.
+
+See [Edition 03 documentation](docs/EDITION_03.md) for controls, acceptance and security scope.
