@@ -31,3 +31,8 @@ Report security issues privately to the maintainers rather than posting exploit 
 ## Edition 03 layout storage
 
 The visual portal transforms and selected layout are saved locally in browser storage. The decoder requires exactly the known portal IDs, a v1 schema, and finite numbers, and clamps coordinates and scales into a recoverable volume. No remote storage or user profiles are involved. Reset removes the browser-stored snapshot. Layout data does not grant any PhiOS capability, is not governed memory, and must never be trusted for authorizing external operations.
+
+
+## Edition 04 built-in tools
+
+Field Pad is an unencrypted, short browser-local note. Users must not enter private keys, passwords or other secrets. It stores no credential, does not sync, and doesn't send content to PhiOS Core. Focus Clock uses only page-local monotonic elapsed time and doesn't run after closing the page. Both are first-party WebGL surfaces, not embedded third-party apps. Their controller selections only modify UI-local state. No additional host or network authority is granted.

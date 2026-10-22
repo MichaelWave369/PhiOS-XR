@@ -1,6 +1,6 @@
 # Φ PhiOS XR
 
-**The Sovereign Spatial Shell · Edition 03**
+**The Sovereign Spatial Shell · Edition 04**
 
 An experimental, open-source WebXR workspace for Quest 3 and other compatible browsers. PhiOS XR is a **separate user interface**, not a replacement for Meta Horizon OS, and not an installation of the PhiOS x86_64 Linux image.
 
@@ -95,3 +95,15 @@ Edition 03 introduces spatial **preview-panel** manipulation. On desktop, drag a
 These are **not embedded websites**, remote desktop streams, OS windows, or privileged applications. Projects remain curated outbound links used from the 2D inspector after leaving XR. The UI has no PhiOS runtime authority.
 
 See [Edition 03 documentation](docs/EDITION_03.md) for controls, acceptance and security scope.
+
+
+## Edition 04: Interactive Field Tools
+
+Switch from **PORTALS** to **FIELD TOOLS** using the browser controls or the in-headset spatial dock. Two real, first-party WebGL tools become active:
+
+1. **Field Pad**: Write a short note (up to 240 characters) with a spatial alphabet keyboard in VR or the native desktop textarea. Notes save to this browser's localStorage on edits. There is no Cloud sync or encryption.
+2. **Focus Clock**: Start, pause, resume or reset a local elapsed-time stopwatch, using either headset actions or normal HTML buttons. It is not a background scheduler, reminder or alarm.
+
+**PORTALS** returns to six movable project cards; earlier layouts and placement are preserved. This milestone does not attempt remote websites as WebGL textures, because ordinary iframe content is not freely available to the renderer and many sites forbid embedding. The real project destinations remain outbound links.
+
+Physical Quest controller/hand acceptance and mixed reality behavior are still **NOT_TESTED**. See [Edition 04 acceptance](docs/EDITION_04.md) for the manual test plan.
