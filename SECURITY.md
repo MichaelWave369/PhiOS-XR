@@ -26,3 +26,8 @@ A future host bridge **must not** simply expose Python MCP tools over a public e
 Safety: Always use immersive software in a cleared play area and follow headset boundary guidance. This preview does not implement guardian or real-world obstacle detection.
 
 Report security issues privately to the maintainers rather than posting exploit details in a public issue.
+
+
+## Edition 03 layout storage
+
+The visual portal transforms and selected layout are saved locally in browser storage. The decoder requires exactly the known portal IDs, a v1 schema, and finite numbers, and clamps coordinates and scales into a recoverable volume. No remote storage or user profiles are involved. Reset removes the browser-stored snapshot. Layout data does not grant any PhiOS capability, is not governed memory, and must never be trusted for authorizing external operations.
