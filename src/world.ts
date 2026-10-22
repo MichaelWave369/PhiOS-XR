@@ -1,10 +1,13 @@
 import * as THREE from 'three'
 import { portals } from './catalog'
 import type { ImmersiveMode } from './capabilities'
+import { calculateWorkspaceAnchor } from './layout'
 
 export type SpatialShell = {
   enter: (mode: ImmersiveMode) => Promise<void>
   select: (id: string) => void
+  recenter: () => void
+  exit: () => Promise<void>
   dispose: () => void
 }
 
@@ -87,7 +90,7 @@ function headingTexture() {
     ctx.fillText('Φ  PhiOS  XR', w / 2, 303)
     ctx.fillStyle = gold
     ctx.font = '32px monospace'
-    ctx.fillText('THE SOVEREIGN SPATIAL SHELL   /   EDITION 01', w / 2, 390)
+    ctx.fillText('THE SOVEREIGN SPATIAL SHELL   /   EDITION 02', w / 2, 390)
   })
 }
 
@@ -121,6 +124,24 @@ function detailTexture(id: string) {
   })
 }
 
+function actionTexture(title: string, hint: string) {
+  return makeTexture((ctx, w, h) => {
+    rounded(ctx, 18, 44, w - 36, h - 88, 45)
+    ctx.fillStyle = '#133b46'
+    ctx.fill()
+    ctx.lineWidth = 5
+    ctx.strokeStyle = '#8be7d6'
+    ctx.stroke()
+    ctx.fillStyle = ink
+    ctx.textAlign = 'center'
+    ctx.font = 'bold 83px system-ui'
+    ctx.fillText(title, w / 2, 286, w - 100)
+    ctx.fillStyle = gold
+    ctx.font = '43px monospace'
+    ctx.fillText(hint, w / 2, 382, w - 105)
+  })
+}
+
 function plane(texture: THREE.Texture, width: number, height: number) {
   return new THREE.Mesh(
     new THREE.PlaneGeometry(width, height),
@@ -134,6 +155,8 @@ function plane(texture: THREE.Texture, width: number, height: number) {
 export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks): SpatialShell {
   const scene = new THREE.Scene()
   scene.background = new THREE.Color('#060d19')
+  const workspace = new THREE.Group()
+  scene.add(workspace)
   const camera = new THREE.PerspectiveCamera(65, 1, 0.05, 100)
   camera.position.set(0, 1.62, 0.24)
   camera.lookAt(0, 1.45, -2.5)
@@ -149,7 +172,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   host.appendChild(renderer.domElement)
 
   const decor = new THREE.Group()
-  scene.add(decor)
+  workspace.add(decor)
   const grid = new THREE.GridHelper(12, 28, '#1b5961', '#12303c')
   grid.position.y = -0.04
   decor.add(grid)
@@ -180,7 +203,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
 
   const banner = plane(headingTexture(), 3.25, 1.12)
   banner.position.set(0, 2.63, -2.45)
-  scene.add(banner)
+  workspace.add(banner)
 
   const cards: THREE.Mesh[] = []
   const cardTextures: THREE.Texture[] = []
@@ -196,16 +219,30 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     card.lookAt(0, 1.45, 0.15)
     card.userData.portalId = portal.id
     card.userData.baseScale = 1
-    scene.add(card)
+    workspace.add(card)
     cards.push(card)
   })
 
   const details = plane(detailTexture('phios'), 1.85, 0.9)
   details.position.set(0, 0.19, -2.7)
   details.rotation.x = -0.19
-  scene.add(details)
+  workspace.add(details)
 
-  const lineMaterial = new THREE.LineBasicMaterial({ color: '#77e2d9', transparent: true, opacity: 0.85 })
+  // WebXR renders the canvas, not the surrounding HTML; add in-headset controls.
+  const controls = [
+    { action: 'recenter', label: 'RE-CENTER', hint: 'FACE FORWARD', x: -1.48 },
+    { action: 'exit', label: 'EXIT XR', hint: 'END SESSION', x: 1.48 },
+  ] as const
+  const actionPanels = controls.map(({ action, label, hint, x }) => {
+    const control = plane(actionTexture(label, hint), 0.84, 0.36)
+    control.position.set(x, 0.25, -2.55)
+    control.rotation.x = -0.12
+    control.userData.action = action
+    workspace.add(control)
+    return control
+  })
+  const targets: THREE.Mesh[] = [...cards, ...actionPanels]
+
   const raycaster = new THREE.Raycaster()
   const rotation = new THREE.Matrix4()
   const raycasterFrom = (object: THREE.Object3D) => {
@@ -217,36 +254,53 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     setSelected(id)
     callbacks.onSelect(id)
   }
-  const controllers: THREE.Group[] = []
+  type Pointer = { controller: THREE.Group; beam: THREE.Line; reticle: THREE.Mesh }
+  const pointers: Pointer[] = []
+  const hitFrom = (controller: THREE.Group) => {
+    controller.updateMatrixWorld(true)
+    raycasterFrom(controller)
+    return raycaster.intersectObjects(targets, false)[0]
+  }
+
+  function activateTarget(object: THREE.Object3D) {
+    const id = object.userData.portalId as string | undefined
+    const action = object.userData.action as string | undefined
+    if (id) activate(id)
+    else if (action === 'recenter') recenter()
+    else if (action === 'exit') void exit().catch(() => {})
+  }
+
+  // A tracked input source's target ray receives 'select' for controllers
+  // and hand gestures when the browser emits that standard WebXR event.
   for (let index = 0; index < 2; index++) {
     const controller = renderer.xr.getController(index)
-    const beamPoints = [new THREE.Vector3(), new THREE.Vector3(0, 0, -1)]
-    const beam = new THREE.Line(new THREE.BufferGeometry().setFromPoints(beamPoints), lineMaterial)
-    beam.scale.z = 3
+    const beam = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(), new THREE.Vector3(0, 0, -1),
+      ]),
+      new THREE.LineBasicMaterial({ color: '#80e8d8', transparent: true, opacity: 0.8 }),
+    )
+    beam.scale.z = 3.6
+    beam.visible = false
     controller.add(beam)
-    const select = () => {
-      raycasterFrom(controller)
-      const intersection = raycaster.intersectObjects(cards, false)[0]
-      const id = intersection?.object.userData.portalId as string | undefined
-      if (id) activate(id)
-    }
-    controller.addEventListener('select', select)
+    const reticle = new THREE.Mesh(
+      new THREE.RingGeometry(0.026, 0.039, 30),
+      new THREE.MeshBasicMaterial({ color: '#e4c78b', side: THREE.DoubleSide, depthTest: false }),
+    )
+    reticle.visible = false
+    scene.add(reticle)
+    controller.addEventListener('select', () => {
+      if (!renderer.xr.isPresenting) return
+      const hit = hitFrom(controller)
+      if (hit) activateTarget(hit.object)
+    })
     scene.add(controller)
-    controllers.push(controller)
-
-    // XR runtime exposes tracked hand poses when the permission/feature is supported.
-    // A small wrist marker is intentionally not represented as a full hand model.
+    pointers.push({ controller, beam, reticle })
     const hand = renderer.xr.getHand(index)
-    const wristMarker = new THREE.Mesh(
+    hand.add(new THREE.Mesh(
       new THREE.SphereGeometry(0.025, 12, 10),
       new THREE.MeshBasicMaterial({ color: '#a3f1e9', transparent: true, opacity: 0.85 }),
-    )
-    hand.add(wristMarker)
-    hand.addEventListener('select', () => {
-      raycasterFrom(hand)
-      const id = raycaster.intersectObjects(cards, false)[0]?.object.userData.portalId as string | undefined
-      if (id) activate(id)
-    })
+    ))
     scene.add(hand)
   }
 
@@ -278,8 +332,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       -((event.clientY - box.top) / box.height) * 2 + 1,
     )
     raycaster.setFromCamera(pointer, camera)
-    const id = raycaster.intersectObjects(cards, false)[0]?.object.userData.portalId as string | undefined
-    if (id) activate(id)
+    const hit = raycaster.intersectObjects(targets, false)[0]
+    if (hit) activateTarget(hit.object)
   }
   renderer.domElement.addEventListener('click', onPointerClick)
 
@@ -294,14 +348,62 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   observer.observe(host)
   resize()
 
+  const head = new THREE.Vector3()
+  const forward = new THREE.Vector3()
+  let pendingRecenter = false
+
+  function recenter() {
+    if (!renderer.xr.isPresenting) {
+      workspace.position.set(0, 0, 0)
+      workspace.rotation.set(0, 0, 0)
+      return
+    }
+    const xrCamera = renderer.xr.getCamera()
+    xrCamera.getWorldPosition(head)
+    xrCamera.getWorldDirection(forward)
+    const anchor = calculateWorkspaceAnchor(head, forward)
+    workspace.position.set(anchor.x, anchor.y, anchor.z)
+    workspace.rotation.set(0, anchor.yaw, 0)
+    workspace.updateMatrixWorld(true)
+  }
+
+  async function exit() {
+    const session = renderer.xr.getSession()
+    if (session) await session.end()
+  }
+
   renderer.setAnimationLoop((time) => {
     if (decor.visible) halo.rotation.z = Math.sin(time / 9000) * 0.06
-    cards.forEach((card) => {
-      const active = card.userData.portalId === selected
-      card.scale.setScalar(active ? 1.04 : 1)
-    })
-    // Device pose and stereo cameras are driven by WebXR while presenting.
+    const hovered = new Set<THREE.Object3D>()
+    if (renderer.xr.isPresenting) {
+      scene.updateMatrixWorld(true)
+      for (const pointer of pointers) {
+        const hit = hitFrom(pointer.controller)
+        pointer.beam.visible = true
+        pointer.beam.scale.z = hit ? Math.min(4, hit.distance) : 3.6
+        pointer.reticle.visible = Boolean(hit)
+        if (hit) {
+          pointer.reticle.position.copy(hit.point).addScaledVector(raycaster.ray.direction, -0.015)
+          hit.object.getWorldQuaternion(pointer.reticle.quaternion)
+          hovered.add(hit.object)
+        }
+      }
+    } else {
+      for (const pointer of pointers) {
+        pointer.beam.visible = false
+        pointer.reticle.visible = false
+      }
+    }
+    cards.forEach((card) => card.scale.setScalar(
+      hovered.has(card) ? 1.08 : card.userData.portalId === selected ? 1.04 : 1,
+    ))
+    actionPanels.forEach((panel) => panel.scale.setScalar(hovered.has(panel) ? 1.10 : 1))
     renderer.render(scene, camera)
+    // Render updates the XR camera pose. Apply recenter for the next frame.
+    if (renderer.xr.isPresenting && pendingRecenter) {
+      recenter()
+      pendingRecenter = false
+    }
   })
 
   async function enter(mode: ImmersiveMode) {
@@ -313,6 +415,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     session.addEventListener('end', () => {
       scene.background = new THREE.Color('#060d19')
       decor.visible = true
+      workspace.position.set(0, 0, 0)
+      workspace.rotation.set(0, 0, 0)
       callbacks.onSession(null)
     })
     try {
@@ -320,6 +424,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       scene.background = mode === 'immersive-ar' ? null : new THREE.Color('#060d19')
       decor.visible = mode !== 'immersive-ar'
       await renderer.xr.setSession(session)
+      pendingRecenter = true
       callbacks.onSession(mode)
     } catch (error) {
       await session.end().catch(() => {})
@@ -349,5 +454,5 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     renderer.domElement.remove()
   }
 
-  return { enter, select: setSelected, dispose }
+  return { enter, select: setSelected, recenter, exit, dispose }
 }

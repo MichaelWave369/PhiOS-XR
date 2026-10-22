@@ -61,7 +61,7 @@ export function App() {
           <span className="identity-mark">Φ</span>
           <span className="identity-copy"><strong>PHIOS <em>XR</em></strong><small>THE SOVEREIGN SPATIAL SHELL</small></span>
         </a>
-        <div className="topbar-mid"><span className="status-pulse" /> EDITION 01 <span className="divider">/</span> EXPERIMENTAL PREVIEW</div>
+        <div className="topbar-mid"><span className="status-pulse" /> EDITION 02 <span className="divider">/</span> EXPERIMENTAL PREVIEW</div>
         <a className="source-link" href={GITHUB} target="_blank" rel="noopener noreferrer">SOURCE CODE <span aria-hidden="true">↗</span></a>
       </header>
 
@@ -95,7 +95,7 @@ export function App() {
             <div className="stage-centerpiece" aria-hidden="true"><span>Φ</span></div>
             <div className="stage-overlay-top" aria-hidden="true">LIVE SPATIAL INTERFACE <span>///</span> READING MODE</div>
             <div className="stage-overlay-bottom" aria-hidden="true">
-              <span>◈ SIX CONNECTED PORTALS</span>
+              <span>◈ SIX SPATIAL PORTALS</span>
               <span>RENDERING / THREE.JS / WEBXR</span>
             </div>
           </div>
@@ -107,6 +107,15 @@ export function App() {
               </button>
               <button className="mode-button mr" onClick={() => void enter('immersive-ar')} disabled={!support?.ar || !!sessionMode || !!sceneError}>
                 <span>✦</span> ENTER MR
+              </button>
+              <button className="mode-button mr" onClick={() => shellRef.current?.recenter()} disabled={!sessionMode}>
+                RE-CENTER
+              </button>
+              <button className="mode-button mr" onClick={() => {
+                const shell = shellRef.current
+                if (shell) void shell.exit().catch((err: unknown) => setError(err instanceof Error ? err.message : 'Unable to exit XR.'))
+              }} disabled={!sessionMode}>
+                EXIT XR
               </button>
             </div>
           </div>
