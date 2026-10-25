@@ -137,3 +137,10 @@ Edition 07 adds a *nonprivileged* in-headset live input readout (source count, c
 After exiting immersive mode, Quest Device Lab shows the last input counters and includes them in an explicitly exported JSON report. No network telemetry or personal controller identifiers are collected.
 
 Follow the [Edition 07 test protocol](docs/EDITION_07.md). Green GitHub CI does not prove on-device controller compatibility or actual headset interaction.
+
+
+## Edition 08: Native Quest debug APK build pipeline
+
+The separate Godot 4.6.2 project includes an ARM64 Android OpenXR debug export preset. A dedicated [GitHub Actions workflow](.github/workflows/native-debug-apk.yml) assembles a **short-lived developer APK artifact** without needing the Quest 3 connected. If the workflow passes, inspect its APK, SHA-256 and Android metadata under Actions → Artifacts. The [Edition 08 runbook](docs/EDITION_08.md) covers installation and testing.
+
+This is still **not tested on physical Quest hardware**, does not replace Meta Horizon OS, and is not a production-signed release. The built-in Godot 4.6 Android OpenXR loader is an initial generic path; Meta-specific integrations may be needed later. The existing WebXR site is unaffected.
