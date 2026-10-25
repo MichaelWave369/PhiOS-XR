@@ -67,3 +67,11 @@
 .quest-fineprint a{color:#b9e9df;text-decoration:underline;text-underline-offset:3px}
 @media(max-width:850px){.quest-lab{padding:0 16px 20px}.quest-device-fields{grid-template-columns:1fr}.quest-lab-details>summary,.quest-lab-body{padding:16px}.quest-check{grid-template-columns:40px minmax(0,1fr);gap:8px}.quest-result{grid-column:2}.quest-result select{max-width:220px}}
 @media(max-width:430px){.quest-lab-details>summary{flex-direction:column;align-items:flex-start;gap:7px}.quest-check{padding:11px 9px}.quest-lab-actions button{flex:1}}
+
+/* Edition 07: input rescue controls and local-only readouts */
+.xr-assist-options{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;padding:11px 17px;background:#0a2230;border-top:1px solid #254451;border-bottom:1px solid #254451}
+.xr-gaze-toggle{display:flex;align-items:center;gap:9px;color:#bcefe4;font-size:11px;font-weight:700;cursor:pointer}
+.xr-gaze-toggle input{width:18px;height:18px;accent-color:#75daca}
+.xr-gaze-toggle small{color:#92adb7;font-size:10px;font-weight:400}
+.xr-diagnostics-summary{color:#c6ac83;font:700 10px ui-monospace,SFMono-Regular,monospace;letter-spacing:.03em}
+@media(max-width:650px){.xr-assist-options{align-items:flex-start}.xr-gaze-toggle{flex-wrap:wrap}.xr-gaze-toggle small{flex-basis:100%;padding-left:27px}}
