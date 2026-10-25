@@ -1,0 +1,11 @@
+# Generated editor state and Android Gradle templates
+.godot/
+android/
+build/
+dist/
+*.apk
+*.aab
+*.keystore
+*.jks
+# Never commit any signing material
+export_credentials.cfg
