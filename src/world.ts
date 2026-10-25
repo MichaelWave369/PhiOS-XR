@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { portals } from './catalog'
 import type { ImmersiveMode } from './capabilities'
+import { emptyDiagnostics, nextGaze, safeGazeTarget, type GazeState, type XRInputDiagnostics } from './xr-input'
 import { calculateWorkspaceAnchor } from './layout'
 import { clearWorkspace, clampPanelSize, clampPosition, loadWorkspace, presetPanels, saveWorkspace, type LayoutPreset } from './workspace'
 import { applyPadKey, elapsedClock, formatClock, loadPad, newClock, pauseClock, sanitizeNote, savePad, startClock, type ClockState } from './fieldtools'
@@ -17,6 +18,7 @@ export type SpatialShell = {
   setView: (mode: ViewMode) => void
   setNote: (value: string) => void
   clockAction: (action: 'toggle' | 'reset') => void
+  setGazeAssist: (enabled: boolean) => void
   dispose: () => void
 }
 
@@ -27,6 +29,7 @@ type ShellCallbacks = {
   onView: (mode: ViewMode) => void
   onNote: (note: string) => void
   onClock: (state: ClockDisplay) => void
+  onInput?: (snapshot: XRInputDiagnostics) => void
 }
 
 /** Canvas textures make the same panels usable in desktop preview and inside the headset. */
@@ -397,6 +400,79 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   addKey('TOGGLE', 1.07, 1.28, 0.48, 'clock')
   addKey('RESET', 1.64, 1.28, 0.48, 'clock')
   const targets: THREE.Mesh[] = [...cards, ...resizeHandles, ...actionPanels, ...keyMeshes]
+  const gazeTargets: THREE.Mesh[] = [...cards, ...actionPanels]
+  const gazeReticle = new THREE.Mesh(
+    new THREE.RingGeometry(0.027, 0.049, 28),
+    new THREE.MeshBasicMaterial({ color: '#a6f6dd', side: THREE.DoubleSide, depthTest: false }),
+  )
+  gazeReticle.visible = false
+  scene.add(gazeReticle)
+
+  // A small in-headset status panel keeps missing input sources observable.
+  const inputTexture = makeTexture((ctx, w, h) => {
+    ctx.fillStyle = '#0d2833'
+    ctx.fillRect(0, 0, w, h)
+  })
+  const inputBoard = plane(inputTexture, 1.66, 0.55)
+  inputBoard.position.set(-2.08, 0.12, -2.4)
+  inputBoard.visible = false
+  workspace.add(inputBoard)
+  let input: XRInputDiagnostics = emptyDiagnostics()
+  let gazeEnabled = true
+  let gaze: GazeState = { target: null, since: 0, fired: false }
+  let gazeProgress = 0
+  let lastInputDraw = -Infinity
+  const connectedRays = new Set<number>()
+
+  function setGazeAssist(enabled: boolean) {
+    gazeEnabled = enabled
+    gaze = { target: null, since: 0, fired: false }
+    gazeReticle.visible = false
+    input = { ...input, gazeAssist: enabled }
+    callbacks.onInput?.({ ...input })
+    lastInputDraw = -Infinity
+  }
+
+  function noteInput(event: string) {
+    input = {
+      ...input,
+      sourceCount: renderer.xr.getSession()?.inputSources?.length ?? 0,
+      connectedRays: connectedRays.size,
+      lastEvent: event.slice(0, 65),
+    }
+    callbacks.onInput?.({ ...input })
+    lastInputDraw = -Infinity
+  }
+
+  function drawInputBoard() {
+    const canvas = inputTexture.image as HTMLCanvasElement
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.fillStyle = '#0b2935'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.strokeStyle = '#78c9bf'
+    ctx.lineWidth = 7
+    ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16)
+    ctx.fillStyle = '#d5f7f0'
+    ctx.font = 'bold 48px monospace'
+    ctx.fillText('QUEST INPUT / LIVE', 38, 95)
+    ctx.font = '36px monospace'
+    ctx.fillStyle = '#a6ddd7'
+    ctx.fillText('SOURCES ' + input.sourceCount + '  RAYS ' + input.connectedRays, 38, 181)
+    ctx.fillText('PRESS ' + input.selectStarts + '  SELECT ' + input.selects, 38, 251)
+    ctx.fillStyle = '#e3c58a'
+    ctx.font = '32px monospace'
+    ctx.fillText('LAST: ' + input.lastEvent, 38, 321, canvas.width - 70)
+    ctx.fillStyle = gazeEnabled ? '#8debc7' : '#879caa'
+    ctx.fillText(
+      gazeEnabled ? 'GAZE ON / DWELL ' + Math.round(gazeProgress * 100) + '%' : 'GAZE ASSIST OFF',
+      38, 397, canvas.width - 70,
+    )
+    ctx.fillStyle = '#aabcc5'
+    ctx.font = '26px monospace'
+    ctx.fillText('Only safe navigation / no system actions', 38, 466, canvas.width - 70)
+    inputTexture.needsUpdate = true
+  }
 
   const raycaster = new THREE.Raycaster()
   const rotation = new THREE.Matrix4()
@@ -528,6 +604,37 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     return raycaster.intersectObjects(targets.filter(mesh => mesh.visible && mesh.parent?.visible !== false), false)[0]
   }
 
+  function updateGaze(time: number) {
+    if (!renderer.xr.isPresenting || !gazeEnabled) {
+      gazeReticle.visible = false
+      gaze = { target: null, since: 0, fired: false }
+      gazeProgress = 0
+      return
+    }
+    const xrCamera = renderer.xr.getCamera()
+    xrCamera.updateMatrixWorld(true)
+    const origin = xrCamera.getWorldPosition(new THREE.Vector3())
+    const direction = xrCamera.getWorldDirection(new THREE.Vector3()).normalize()
+    raycaster.set(origin, direction)
+    const hit = raycaster.intersectObjects(
+      gazeTargets.filter((mesh) => mesh.visible && mesh.parent?.visible !== false), false,
+    )[0]
+    const target = hit ? safeGazeTarget(
+      hit.object.userData.portalId as string | undefined,
+      hit.object.userData.action as string | undefined,
+    ) : null
+    const advanced = nextGaze(gaze, target, time)
+    gaze = advanced.state
+    gazeProgress = advanced.progress
+    gazeReticle.visible = Boolean(target && hit)
+    if (target && hit) {
+      gazeReticle.position.copy(hit.point).addScaledVector(direction, -0.016)
+      hit.object.getWorldQuaternion(gazeReticle.quaternion)
+      gazeReticle.scale.setScalar(1 + advanced.progress * 0.48)
+    }
+    if (advanced.activate && hit) activateTarget(hit.object)
+  }
+
   function activateTarget(object: THREE.Object3D) {
     const id = object.userData.portalId as string | undefined
     const action = object.userData.action as string | undefined
@@ -565,7 +672,18 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     )
     reticle.visible = false
     scene.add(reticle)
+    controller.addEventListener('connected', () => {
+      connectedRays.add(index)
+      noteInput('RAY ' + index + ' CONNECTED')
+    })
+    controller.addEventListener('disconnected', () => {
+      connectedRays.delete(index)
+      xrDrags.delete(controller)
+      noteInput('RAY ' + index + ' DISCONNECTED')
+    })
     controller.addEventListener('selectstart', () => {
+      input = { ...input, selectStarts: input.selectStarts + 1 }
+      noteInput('RAY ' + index + ' SELECTSTART')
       if (!renderer.xr.isPresenting) return
       scene.updateMatrixWorld(true)
       const hit = hitFrom(controller)
@@ -579,6 +697,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       if (xrDrags.delete(controller)) persist()
     })
     controller.addEventListener('select', () => {
+      input = { ...input, selects: input.selects + 1 }
+      noteInput('RAY ' + index + ' SELECT')
       if (!renderer.xr.isPresenting || xrDrags.has(controller)) return
       const hit = hitFrom(controller)
       if (hit && (hit.object.userData.action || hit.object.userData.padKey || hit.object.userData.clockAction)) activateTarget(hit.object)
@@ -740,6 +860,15 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     })
     actionPanels.forEach((panel) => panel.scale.setScalar(hovered.has(panel) ? 1.08 : 1))
     renderer.render(scene, camera)
+    // Render has updated the XR camera pose; use it for head-gaze raycasts.
+    updateGaze(time)
+    inputBoard.visible = renderer.xr.isPresenting
+    if (renderer.xr.isPresenting && time - lastInputDraw >= 450) {
+      input = { ...input, sourceCount: renderer.xr.getSession()?.inputSources?.length ?? 0 }
+      drawInputBoard()
+      callbacks.onInput?.({ ...input })
+      lastInputDraw = time
+    }
     // Render updates the XR camera pose. Apply recenter for the next frame.
     if (renderer.xr.isPresenting && pendingRecenter) {
       recenter()
@@ -753,7 +882,16 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     const session = await navigator.xr.requestSession(mode, {
       optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'],
     })
+    const onSourcesChanged = () => noteInput('INPUT SOURCES CHANGED')
+    session.addEventListener('inputsourceschange', onSourcesChanged)
     session.addEventListener('end', () => {
+      session.removeEventListener('inputsourceschange', onSourcesChanged)
+      inputBoard.visible = false
+      gazeReticle.visible = false
+      connectedRays.clear()
+      gaze = { target: null, since: 0, fired: false }
+      gazeProgress = 0
+      noteInput('SESSION ENDED')
       scene.background = new THREE.Color('#060d19')
       decor.visible = true
       workspace.position.set(0, 0, 0)
@@ -767,6 +905,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       scene.background = mode === 'immersive-ar' ? null : new THREE.Color('#060d19')
       decor.visible = mode !== 'immersive-ar'
       await renderer.xr.setSession(session)
+      input = { ...emptyDiagnostics(gazeEnabled), sourceCount: session.inputSources.length }
+      noteInput('SESSION OPENED')
       pendingRecenter = true
       callbacks.onSession(mode)
     } catch (error) {
@@ -804,5 +944,5 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   callbacks.onView(view)
   callbacks.onNote(note)
   callbacks.onClock({ time: lastClockText, running: false })
-  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, dispose }
+  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, dispose }
 }
