@@ -18,6 +18,19 @@ var detail_label: Label3D
 var status_label: Label3D
 var xr_active := false
 var anchor_frames := 0
+# Local-only controller evidence. No account IDs, analytics, or outbound calls.
+var controller_presses := 0
+var controller_hits := 0
+var last_input := "WAITING"
+var left_ray: MeshInstance3D
+var right_ray: MeshInstance3D
+var gaze_target := -1
+var gaze_started_at := 0
+var gaze_fired := false
+var gaze_progress := 0
+var diagnostic_refresh := 0.0
+const GAZE_DWELL_MS := 2200
+
 
 
 func _ready() -> void:
@@ -27,6 +40,10 @@ func _ready() -> void:
     _build_workspace()
     _select(0)
     _place_in_front()
+    left_ray = _build_controller_ray(left_hand, Color("#71e6dd"))
+    right_ray = _build_controller_ray(right_hand, Color("#e2ba81"))
+    left_hand.tracking_changed.connect(_on_tracking_changed.bind("LEFT"))
+    right_hand.tracking_changed.connect(_on_tracking_changed.bind("RIGHT"))
 
     left_hand.button_pressed.connect(_on_controller_button.bind(left_hand))
     right_hand.button_pressed.connect(_on_controller_button.bind(right_hand))
@@ -37,7 +54,7 @@ func _ready() -> void:
         DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
         xr_active = true
         anchor_frames = 5
-        status_label.text = "NATIVE OPENXR | READ-ONLY | CONTROLLER INPUT UNVERIFIED"
+        status_label.text = "NATIVE OPENXR | Q3 INPUT ACCEPTANCE PENDING"
     else:
         status_label.text = "DESKTOP PREVIEW | OPENXR RUNTIME NOT ACTIVE"
         if OS.has_feature("android"):
@@ -49,6 +66,71 @@ func _process(_delta: float) -> void:
         anchor_frames -= 1
         if anchor_frames == 0:
             _place_in_front()
+
+
+func _physics_process(delta: float) -> void:
+    if not xr_active:
+        return
+    left_ray.visible = left_hand.get_has_tracking_data()
+    right_ray.visible = right_hand.get_has_tracking_data()
+    _process_gaze()
+
+    # The in-world readout is intentionally low-frequency and stores nothing.
+    diagnostic_refresh += delta
+    if diagnostic_refresh >= 0.3:
+        diagnostic_refresh = 0.0
+        status_label.text = _input_status()
+
+
+func _build_controller_ray(controller: XRController3D, tint: Color) -> MeshInstance3D:
+    var beam := MeshInstance3D.new()
+    beam.name = "AimRay"
+    var mesh := BoxMesh.new()
+    mesh.size = Vector3(0.008, 0.008, 2.8)
+    beam.mesh = mesh
+    beam.position = Vector3(0, 0, -1.4)
+    beam.material_override = _panel_material(tint)
+    beam.visible = false
+    controller.add_child(beam)
+    return beam
+
+
+func _on_tracking_changed(tracked: bool, hand: String) -> void:
+    last_input = hand + (" TRACKED" if tracked else " UNTRACKED")
+
+
+func _input_status() -> String:
+    var left := "L:" + ("TRACK" if left_hand.get_has_tracking_data() else "NONE")
+    var right := "R:" + ("TRACK" if right_hand.get_has_tracking_data() else "NONE")
+    return "%s  %s  PRESS:%d  HIT:%d  GAZE:%d%%\nLAST:%s" % [
+        left, right, controller_presses, controller_hits, gaze_progress, last_input
+    ]
+
+
+func _process_gaze() -> void:
+    # Head-forward gaze is a fallback, NOT eye tracking or face recognition.
+    # It only chooses a local read-only portal. It cannot run external links.
+    var eye := xr_camera.global_position
+    var direction := -xr_camera.global_transform.basis.z
+    var hit := _ray_hit(eye, eye + direction * 10.0)
+    var index := _portal_index_from_hit(hit)
+    if index < 0:
+        gaze_target = -1
+        gaze_fired = false
+        gaze_progress = 0
+        return
+    var now := Time.get_ticks_msec()
+    if gaze_target != index:
+        gaze_target = index
+        gaze_started_at = now
+        gaze_fired = false
+        gaze_progress = 0
+        return
+    gaze_progress = mini(100, int(100.0 * float(now - gaze_started_at) / GAZE_DWELL_MS))
+    if not gaze_fired and now - gaze_started_at >= GAZE_DWELL_MS:
+        gaze_fired = true
+        _select(index)
+        last_input = "GAZE SELECTED " + str(index + 1)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -67,20 +149,44 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_controller_button(action_name: String, controller: XRController3D) -> void:
-    # A native export must supply matching OpenXR actions/bindings.
-    # Do not mark controller input supported until Q03-Q10 pass on-device.
-    if action_name == "trigger_click" or action_name == "select":
-        _pick(controller.global_position, controller.global_position - controller.global_transform.basis.z * 10.0)
-
-
-func _pick(ray_start: Vector3, ray_end: Vector3) -> void:
-    var query := PhysicsRayQueryParameters3D.create(ray_start, ray_end)
-    var hit := get_world_3d().direct_space_state.intersect_ray(query)
-    if hit.is_empty():
+    if action_name != "trigger_click":
         return
+    controller_presses += 1
+    var hand := "LEFT" if controller == left_hand else "RIGHT"
+    if not controller.get_has_tracking_data():
+        last_input = hand + " PRESS / NO AIM POSE"
+        return
+    # The action map explicitly binds trigger_click and aim_pose.
+    var origin := controller.global_position
+    var end := origin - controller.global_transform.basis.z * 10.0
+    if _pick(origin, end):
+        controller_hits += 1
+        last_input = hand + " HIT"
+    else:
+        last_input = hand + " PRESS / MISS"
+
+
+func _ray_hit(ray_start: Vector3, ray_end: Vector3) -> Dictionary:
+    var query := PhysicsRayQueryParameters3D.create(ray_start, ray_end)
+    query.collision_mask = 1
+    return get_world_3d().direct_space_state.intersect_ray(query)
+
+
+func _portal_index_from_hit(hit: Dictionary) -> int:
+    if hit.is_empty():
+        return -1
     var target: Object = hit["collider"]
     if target is StaticBody3D and target.has_meta("portal_index"):
-        _select(int(target.get_meta("portal_index")))
+        return int(target.get_meta("portal_index"))
+    return -1
+
+
+func _pick(ray_start: Vector3, ray_end: Vector3) -> bool:
+    var index := _portal_index_from_hit(_ray_hit(ray_start, ray_end))
+    if index < 0:
+        return false
+    _select(index)
+    return true
 
 
 func _place_in_front() -> void:

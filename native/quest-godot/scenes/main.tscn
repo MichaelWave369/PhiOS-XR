@@ -13,6 +13,8 @@ current = true
 
 [node name="LeftHand" type="XRController3D" parent="XROrigin"]
 tracker = &"left_hand"
+pose = &"aim_pose"
 
 [node name="RightHand" type="XRController3D" parent="XROrigin"]
 tracker = &"right_hand"
+pose = &"aim_pose"

@@ -30,6 +30,9 @@ jobs:
       - name: Import native scene and validate scripts
         run: |
           ./Godot_v4.6.2-stable_linux.x86_64 --headless --editor --path native/quest-godot --import --quit
+      - name: Validate explicit XR action map and binding inventory
+        run: |
+          ./Godot_v4.6.2-stable_linux.x86_64 --headless --path native/quest-godot --script res://tests/input_map_smoke.gd
       - name: Exercise desktop fallback for a few frames
         run: |
           ./Godot_v4.6.2-stable_linux.x86_64 --headless --path native/quest-godot --quit-after 5
