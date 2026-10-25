@@ -701,7 +701,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       noteInput('RAY ' + index + ' SELECT')
       if (!renderer.xr.isPresenting || xrDrags.has(controller)) return
       const hit = hitFrom(controller)
-      if (hit && (hit.object.userData.action || hit.object.userData.padKey || hit.object.userData.clockAction)) activateTarget(hit.object)
+      if (hit && (hit.object.userData.portalId || hit.object.userData.action || hit.object.userData.padKey || hit.object.userData.clockAction)) activateTarget(hit.object)
     })
     scene.add(controller)
     pointers.push({ controller, beam, reticle })
