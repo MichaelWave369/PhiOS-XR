@@ -1,6 +1,6 @@
 # Φ PhiOS XR
 
-**The Sovereign Spatial Shell · Edition 04**
+**The Sovereign Spatial Shell · Edition 05**
 
 An experimental, open-source WebXR workspace for Quest 3 and other compatible browsers. PhiOS XR is a **separate user interface**, not a replacement for Meta Horizon OS, and not an installation of the PhiOS x86_64 Linux image.
 
@@ -57,7 +57,8 @@ The browser page has **no host-process execution**, no PhiOS lease issuance, no 
 - **Edition 01 (merged)**: 3D spatial dashboard + 2D accessible fallback, VR/MR entry, controller selection, optional hand-select hooks, read-only catalog, tests, CI and Pages build.
 - **Edition 02**: Quest device acceptance and better input feedback, session exit UI, reposition/scale panels, performance budgets, WebXR Layers study.
 - **Edition 03**: Read-only authenticated PhiOS bridge (only after separate capability/authority design and threat review).
-- **Edition 04**: Stateful spatial workspaces and deeper Field Atlas / Constellation components.
+- **Edition 04 (merged)**: Stateful spatial workspaces and deeper Field Atlas / Constellation components.
+- **Edition 05**: Quest Device Lab for real-headset acceptance evidence (web-only; no native launcher yet).
 - **Later**: Native Quest packaging, only after confirming API support and permission constraints; never claim this replaces Horizon OS.
 
 ## Related
@@ -107,3 +108,10 @@ Switch from **PORTALS** to **FIELD TOOLS** using the browser controls or the in-
 **PORTALS** returns to six movable project cards; earlier layouts and placement are preserved. This milestone does not attempt remote websites as WebGL textures, because ordinary iframe content is not freely available to the renderer and many sites forbid embedding. The real project destinations remain outbound links.
 
 Physical Quest controller/hand acceptance and mixed reality behavior are still **NOT_TESTED**. See [Edition 04 acceptance](docs/EDITION_04.md) for the manual test plan.
+
+
+## Edition 05: Quest Device Lab
+
+A collapsible **Quest Device Lab** below the existing workspace provides a physical Quest 3 acceptance worksheet for Q01–Q15. Each check is manually marked PASS/FAIL/BLOCKED/NOT_TESTED; browser WebXR capability probes are displayed separately and **never** treated as proof of device compatibility. Device, firmware, browser and observations are entered by the tester. The page logs immersive session start/end and entry errors, saves the worksheet in browser localStorage when allowed, and supports explicit JSON download or clipboard copy. No network submission, device rooting, Meta OS replacement, or camera access is added.
+
+Follow [the Edition 05 test protocol](docs/EDITION_05.md) before making on-device claims. Physical hardware results remain **NOT_TESTED** until somebody runs the acceptance matrix on a real headset.

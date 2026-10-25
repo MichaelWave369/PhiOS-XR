@@ -27,3 +27,43 @@
 .clock-controls{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
 .clock-value{font:700 26px ui-monospace,monospace;letter-spacing:.06em;color:#e7d7a6;margin-right:auto}
 @media(max-width:750px){.field-tools-editor{grid-template-columns:1fr}.field-view-switch{padding:11px 9px}.clock-value{font-size:23px}}
+
+
+/* Edition 05: local-only Quest device acceptance workspace. */
+.quest-lab{padding:0 34px 24px;background:#07121d}
+.quest-lab-details{border:1px solid #29434e;background:linear-gradient(180deg,#102836,#091824);border-radius:12px;overflow:hidden}
+.quest-lab-details>summary{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:19px 24px;cursor:pointer;list-style:none}
+.quest-lab-details>summary::-webkit-details-marker{display:none}
+.quest-lab-details>summary:focus-visible{outline:2px solid #9cefe3;outline-offset:-3px}
+.quest-lab-details>summary strong{font:750 12px/1.4 ui-monospace,monospace;color:#b3f7e9;letter-spacing:.12em}
+.quest-lab-details>summary small{display:block;color:#8fb3bb;font-size:11px;margin-top:4px}
+.quest-summary{color:#ddc18c;font:700 11px ui-monospace,monospace;white-space:nowrap}
+.quest-summary span{margin-left:8px}
+.quest-lab-body{padding:22px 24px 26px;border-top:1px solid #24414b}
+.quest-lab-intro{max-width:960px;color:#b2ced3;font-size:13px;line-height:1.7;margin:0 0 18px}
+.quest-signals{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:22px}
+.quest-signals span{border:1px solid #35525c;background:#0b212f;padding:8px 10px;border-radius:5px;color:#8daeb8;font:650 10px ui-monospace,monospace}
+.quest-signals b{color:#baf6e8;margin-left:4px}
+.quest-device-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:23px}
+.quest-device-fields label,.quest-notes,.quest-result{display:flex;flex-direction:column;gap:7px;color:#a5c6cb;font:700 10px ui-monospace,monospace;letter-spacing:.06em}
+.quest-device-fields input,.quest-notes textarea,.quest-result select{width:100%;background:#071523;border:1px solid #34535d;border-radius:5px;color:#e6f4f5;padding:10px 11px;font:12px system-ui,sans-serif}
+.quest-device-fields input:focus-visible,.quest-notes textarea:focus-visible,.quest-result select:focus-visible{outline:2px solid #91eee0;outline-offset:2px}
+.quest-matrix{border:1px solid #294650;border-radius:8px;overflow:hidden}
+.quest-check{display:grid;grid-template-columns:48px minmax(0,1fr) 156px;align-items:center;gap:12px;padding:10px 14px;background:#0b202d;border-bottom:1px solid #28424e}
+.quest-check:nth-child(even){background:#102633}
+.quest-check:last-child{border-bottom:none}
+.quest-check-id{font:700 12px ui-monospace,monospace;color:#dfc58f}
+.quest-check-copy strong{display:block;color:#e1f1f1;font-size:12px;font-weight:650}
+.quest-check-copy small{display:block;margin-top:3px;color:#9bb9c0;font-size:11px;line-height:1.45}
+.quest-result select{min-width:0;padding:7px 8px}
+.quest-notes{margin-top:21px}
+.quest-notes textarea{resize:vertical;min-height:100px;line-height:1.5}
+.quest-lab-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px}
+.quest-lab-actions button{background:#1b515b;color:#eafffa;border:1px solid #4e948f;border-radius:5px;padding:11px 13px;font:700 11px ui-monospace,monospace}
+.quest-lab-actions button:hover{background:#286a74}
+.quest-lab-actions button.quest-reset{background:#1b2c35;color:#b6c7cb;border-color:#385260}
+.quest-lab-actions [role=status]{font-size:11px;color:#adc1c8}
+.quest-fineprint{max-width:1000px;color:#879fa9;font-size:11px;line-height:1.7;margin:18px 0 0}
+.quest-fineprint a{color:#b9e9df;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:850px){.quest-lab{padding:0 16px 20px}.quest-device-fields{grid-template-columns:1fr}.quest-lab-details>summary,.quest-lab-body{padding:16px}.quest-check{grid-template-columns:40px minmax(0,1fr);gap:8px}.quest-result{grid-column:2}.quest-result select{max-width:220px}}
+@media(max-width:430px){.quest-lab-details>summary{flex-direction:column;align-items:flex-start;gap:7px}.quest-check{padding:11px 9px}.quest-lab-actions button{flex:1}}
