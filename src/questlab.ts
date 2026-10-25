@@ -1,4 +1,5 @@
 import type { ImmersiveMode, XRAvailability } from './capabilities'
+import type { XRInputDiagnostics } from './xr-input'
 
 // All physical-device outcomes are explicitly entered by the tester. Capability
 // detection is useful context, never proof that tracking/passthrough works.
@@ -42,6 +43,7 @@ export type QuestContext = {
   webXRExposed: boolean
   support: XRAvailability | null
   appRevision: string
+  input?: XRInputDiagnostics | null
 }
 const STATUSES: readonly QuestStatus[] = ['NOT_TESTED', 'PASS', 'FAIL', 'BLOCKED']
 const EVENT_TYPES: readonly QuestEvent['type'][] = ['start', 'end', 'error']

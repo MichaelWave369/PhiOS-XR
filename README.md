@@ -1,6 +1,6 @@
 # Φ PhiOS XR
 
-**The Sovereign Spatial Shell · Edition 05**
+**The Sovereign Spatial Shell · Edition 07**
 
 An experimental, open-source WebXR workspace for Quest 3 and other compatible browsers. PhiOS XR is a **separate user interface**, not a replacement for Meta Horizon OS, and not an installation of the PhiOS x86_64 Linux image.
 
@@ -123,6 +123,17 @@ A **separate** native Godot 4.6.x project now lives under [`native/quest-godot/`
 
 - Source and deployment prerequisites: [native Quest project](native/quest-godot/README.md)
 - Native hardware acceptance requirements: [Edition 06 checklist](docs/EDITION_06.md)
-- WebXR Edition 05 remains the currently deployable GitHub Pages application.
+- The WebXR shell remains the deployable GitHub Pages application; Edition 07 adds input diagnostics and gaze assistance.
 
 Godot smoke tests only validate desktop source loading. Android export and Quest 3 testing require a separate physical-device gate. Neither project replaces Meta Horizon OS.
+
+
+## Edition 07: Quest controller rescue
+
+An initial physical Quest 3 browser visit successfully loaded the site, but the tester reported that the controllers could not select objects. We have **not yet established whether immersive VR/MR was entered or whether the issue originated in controller power, browser focus, WebXR source exposure or scene raycasting**.
+
+Edition 07 adds a *nonprivileged* in-headset live input readout (source count, connected target rays, selectstart/select event counts, last input event) and a deliberately restricted **gaze assist**. Gaze is on by default and can be switched off in the 2D workspace before entering XR. Hold your gaze on a portal or a safe mode/layout button for 2.3 seconds; a growing mint reticle indicates the dwell progress. Gaze **cannot** invoke EXIT XR, RESET, RE-CENTER, remote links or privileged actions. All portal selection remains read-only.
+
+After exiting immersive mode, Quest Device Lab shows the last input counters and includes them in an explicitly exported JSON report. No network telemetry or personal controller identifiers are collected.
+
+Follow the [Edition 07 test protocol](docs/EDITION_07.md). Green GitHub CI does not prove on-device controller compatibility or actual headset interaction.

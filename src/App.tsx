@@ -4,6 +4,7 @@ import { getPortal, portals } from './catalog'
 import type { LayoutPreset } from './workspace'
 import { createSpatialShell, type ClockDisplay, type SpatialShell, type ViewMode } from './world'
 import { MAX_NOTE_CHARS } from './fieldtools'
+import { emptyDiagnostics, type XRInputDiagnostics } from './xr-input'
 import { QUEST_CHECKS, QUEST_STORAGE_KEY, buildQuestExport, createQuestReport, decodeQuestReport, questCounts, recordQuestEvent, type QuestStatus } from './questlab'
 
 const GITHUB = 'https://github.com/MichaelWave369/PhiOS-XR'
@@ -18,6 +19,8 @@ export function App() {
   const [clockDisplay, setClockDisplay] = useState<ClockDisplay>({ time: '00:00', running: false })
   const [support, setSupport] = useState<XRAvailability | null>(null)
   const [sessionMode, setSessionMode] = useState<ImmersiveMode | null>(null)
+  const [gazeAssist, setGazeAssist] = useState(true)
+  const [inputDiagnostics, setInputDiagnostics] = useState<XRInputDiagnostics>(emptyDiagnostics)
   const [error, setError] = useState('')
   const [sceneError, setSceneError] = useState('')
   const [questReport, setQuestReport] = useState(() => {
@@ -45,7 +48,8 @@ export function App() {
       secureContext: window.isSecureContext,
       webXRExposed: typeof navigator.xr !== 'undefined',
       support,
-      appRevision: 'edition-05',
+      appRevision: 'edition-07',
+      input: inputDiagnostics,
     }, new Date().toISOString()), null, 2)
   }
 
@@ -94,6 +98,7 @@ export function App() {
         onView: setView,
         onNote: setFieldNote,
         onClock: setClockDisplay,
+        onInput: setInputDiagnostics,
       })
       shellRef.current = shell
     } catch (err) {
@@ -135,7 +140,7 @@ export function App() {
           <span className="identity-mark">Φ</span>
           <span className="identity-copy"><strong>PHIOS <em>XR</em></strong><small>THE SOVEREIGN SPATIAL SHELL</small></span>
         </a>
-        <div className="topbar-mid"><span className="status-pulse" /> EDITION 05 <span className="divider">/</span> EXPERIMENTAL PREVIEW</div>
+        <div className="topbar-mid"><span className="status-pulse" /> EDITION 07 <span className="divider">/</span> EXPERIMENTAL PREVIEW</div>
         <a className="source-link" href={GITHUB} target="_blank" rel="noopener noreferrer">SOURCE CODE <span aria-hidden="true">↗</span></a>
       </header>
 
@@ -191,6 +196,20 @@ export function App() {
               }} disabled={!sessionMode}>
                 EXIT XR
               </button>
+            </div>
+          </div>
+          <div className="xr-assist-options">
+            <label className="xr-gaze-toggle">
+              <input type="checkbox" checked={gazeAssist}
+                onChange={(event) => {
+                  const enabled = event.target.checked
+                  setGazeAssist(enabled)
+                  shellRef.current?.setGazeAssist(enabled)
+                }} />
+              <span>GAZE ASSIST</span><small>Look at a portal for 2.3 seconds to select. No external links or destructive actions.</small>
+            </label>
+            <div className="xr-diagnostics-summary" aria-live="off">
+              INPUT SOURCES {inputDiagnostics.sourceCount} · RAYS {inputDiagnostics.connectedRays} · PRESS {inputDiagnostics.selectStarts} · SELECT {inputDiagnostics.selects}
             </div>
           </div>
           <div className="field-view-switch" role="group" aria-label="Spatial workspace mode">
@@ -277,6 +296,11 @@ export function App() {
               <span>VR MODE: <b>{support === null ? 'CHECKING' : support.vr ? 'AVAILABLE' : 'UNAVAILABLE'}</b></span>
               <span>MR MODE: <b>{support === null ? 'CHECKING' : support.ar ? 'AVAILABLE' : 'UNAVAILABLE'}</b></span>
               <span>SESSION EVENTS: <b>{questReport.events.length}</b></span>
+              <span>XR INPUT SOURCES: <b>{inputDiagnostics.sourceCount}</b></span>
+              <span>XR CONNECTED RAYS: <b>{inputDiagnostics.connectedRays}</b></span>
+              <span>PRIMARY PRESSES: <b>{inputDiagnostics.selectStarts}</b></span>
+              <span>COMPLETED SELECTS: <b>{inputDiagnostics.selects}</b></span>
+              <span>LAST INPUT: <b>{inputDiagnostics.lastEvent}</b></span>
             </div>
             <div className="quest-device-fields">
               <label>HEADSET MODEL<input maxLength={80} value={questReport.deviceModel} placeholder="e.g. Quest 3" onChange={(event) => updateQuestField('deviceModel', event.target.value)} /></label>
