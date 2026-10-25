@@ -1,0 +1,29 @@
+; Engine configuration file.
+; PhiOS XR Edition 06 - experimental native OpenXR shell.
+; This project has not been built or verified on a physical Quest 3.
+
+config_version=5
+
+[application]
+
+config/name="PhiOS XR Native"
+config/description="Experimental native OpenXR spatial shell; not an operating system"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.6", "GL Compatibility")
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+environment/defaults/default_clear_color=Color(0.02, 0.04, 0.08, 1)
+
+[xr]
+
+openxr/enabled=true
+shaders/enabled=true

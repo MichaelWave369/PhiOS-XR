@@ -1,0 +1,18 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/shell.gd" id="1_shell"]
+
+[node name="PhiOSNative" type="Node3D"]
+script = ExtResource("1_shell")
+
+[node name="XROrigin" type="XROrigin3D" parent="."]
+
+[node name="XRCamera" type="XRCamera3D" parent="XROrigin"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+current = true
+
+[node name="LeftHand" type="XRController3D" parent="XROrigin"]
+tracker = &"left_hand"
+
+[node name="RightHand" type="XRController3D" parent="XROrigin"]
+tracker = &"right_hand"

@@ -1,0 +1,37 @@
+name: Validate PhiOS XR native Godot scaffold
+
+on:
+  pull_request:
+    paths:
+      - 'native/quest-godot/**'
+      - '.github/workflows/native-godot-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'native/quest-godot/**'
+      - '.github/workflows/native-godot-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  parse-and-smoke:
+    name: Godot 4.6.2 parse and desktop fallback
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download official Godot editor
+        run: |
+          curl -fL --retry 3 --retry-delay 2 \
+            "https://github.com/godotengine/godot/releases/download/4.6.2-stable/Godot_v4.6.2-stable_linux.x86_64.zip" -o godot.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.6.2-stable_linux.x86_64
+      - name: Import native scene and validate scripts
+        run: |
+          ./Godot_v4.6.2-stable_linux.x86_64 --headless --editor --path native/quest-godot --import --quit
+      - name: Exercise desktop fallback for a few frames
+        run: |
+          ./Godot_v4.6.2-stable_linux.x86_64 --headless --path native/quest-godot --quit-after 5
+
+# This does not export an APK, verify OpenXR hardware, or grant OS privileges.

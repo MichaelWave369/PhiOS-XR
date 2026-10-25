@@ -115,3 +115,14 @@ Physical Quest controller/hand acceptance and mixed reality behavior are still *
 A collapsible **Quest Device Lab** below the existing workspace provides a physical Quest 3 acceptance worksheet for Q01–Q15. Each check is manually marked PASS/FAIL/BLOCKED/NOT_TESTED; browser WebXR capability probes are displayed separately and **never** treated as proof of device compatibility. Device, firmware, browser and observations are entered by the tester. The page logs immersive session start/end and entry errors, saves the worksheet in browser localStorage when allowed, and supports explicit JSON download or clipboard copy. No network submission, device rooting, Meta OS replacement, or camera access is added.
 
 Follow [the Edition 05 test protocol](docs/EDITION_05.md) before making on-device claims. Physical hardware results remain **NOT_TESTED** until somebody runs the acceptance matrix on a real headset.
+
+
+## Edition 06: Native Quest/OpenXR source prototype
+
+A **separate** native Godot 4.6.x project now lives under [`native/quest-godot/`](native/quest-godot/README.md). It contains an OpenXR scene and six local, read-only spatial portal cards, plus a desktop fallback and a dedicated Godot CI parse/smoke workflow. **No Android APK is built or installed; native headset behavior is untested.**
+
+- Source and deployment prerequisites: [native Quest project](native/quest-godot/README.md)
+- Native hardware acceptance requirements: [Edition 06 checklist](docs/EDITION_06.md)
+- WebXR Edition 05 remains the currently deployable GitHub Pages application.
+
+Godot smoke tests only validate desktop source loading. Android export and Quest 3 testing require a separate physical-device gate. Neither project replaces Meta Horizon OS.
