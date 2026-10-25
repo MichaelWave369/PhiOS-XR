@@ -31,16 +31,20 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Initialize Android command-line tools
-        uses: android-actions/setup-android@v3
-
       - name: Install Android SDK components
         shell: bash
         run: |
           set -euo pipefail
           : "${ANDROID_HOME:?GitHub runner Android SDK required}"
-          yes | sdkmanager --sdk_root="${ANDROID_HOME}" --licenses >/dev/null || true
-          sdkmanager --sdk_root="${ANDROID_HOME}" "platform-tools" "build-tools;35.0.1" "platforms;android-35"
+          # Current GitHub-hosted runners include the CLI, but may not put
+          # sdkmanager on PATH. Avoid actions that request retired SDK 'tools'.
+          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "${SDKMANAGER}" ]; then
+            SDKMANAGER="$(find "${ANDROID_HOME}/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          fi
+          test -x "${SDKMANAGER}"
+          yes | "${SDKMANAGER}" --sdk_root="${ANDROID_HOME}" --licenses >/dev/null || true
+          "${SDKMANAGER}" --sdk_root="${ANDROID_HOME}" "platform-tools" "build-tools;35.0.1" "platforms;android-35"
 
       - name: Install pinned Godot editor and matching Android export templates
         shell: bash
