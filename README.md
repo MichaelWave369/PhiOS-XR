@@ -144,3 +144,8 @@ Follow the [Edition 07 test protocol](docs/EDITION_07.md). Green GitHub CI does 
 The separate Godot 4.6.2 project includes an ARM64 Android OpenXR debug export preset. A dedicated [GitHub Actions workflow](.github/workflows/native-debug-apk.yml) assembles a **short-lived developer APK artifact** without needing the Quest 3 connected. If the workflow passes, inspect its APK, SHA-256 and Android metadata under Actions → Artifacts. The [Edition 08 runbook](docs/EDITION_08.md) covers installation and testing.
 
 This is still **not tested on physical Quest hardware**, does not replace Meta Horizon OS, and is not a production-signed release. The built-in Godot 4.6 Android OpenXR loader is an initial generic path; Meta-specific integrations may be needed later. The existing WebXR site is unaffected.
+
+
+## Edition 09: Native controller input readiness
+
+The **native Godot** app now carries a minimal explicit OpenXR action map, tracked controller aim beams, in-world press/hit counters and head-forward dwell selection of *read-only* portal cards. This is separate from Edition 07's WebXR browser diagnostics. The [Edition 09 test protocol](docs/EDITION_09.md) makes no on-headset claims until real Quest 3 testing. Both native CI and the debug APK workflow must remain green before considering installation.
