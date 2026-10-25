@@ -4,6 +4,7 @@ import { getPortal, portals } from './catalog'
 import type { LayoutPreset } from './workspace'
 import { createSpatialShell, type ClockDisplay, type SpatialShell, type ViewMode } from './world'
 import { MAX_NOTE_CHARS } from './fieldtools'
+import { QUEST_CHECKS, QUEST_STORAGE_KEY, buildQuestExport, createQuestReport, decodeQuestReport, questCounts, recordQuestEvent, type QuestStatus } from './questlab'
 
 const GITHUB = 'https://github.com/MichaelWave369/PhiOS-XR'
 
@@ -19,7 +20,65 @@ export function App() {
   const [sessionMode, setSessionMode] = useState<ImmersiveMode | null>(null)
   const [error, setError] = useState('')
   const [sceneError, setSceneError] = useState('')
+  const [questReport, setQuestReport] = useState(() => {
+    try {
+      return decodeQuestReport(JSON.parse(window.localStorage.getItem(QUEST_STORAGE_KEY) ?? 'null')) ?? createQuestReport()
+    } catch {
+      return createQuestReport()
+    }
+  })
+  const [questNotice, setQuestNotice] = useState('')
   const selected = getPortal(selectedId) ?? portals[0]
+  const questSummary = questCounts(questReport)
+
+  useEffect(() => {
+    try { window.localStorage.setItem(QUEST_STORAGE_KEY, JSON.stringify(questReport)) }
+    catch { /* Storage may be blocked by browser privacy settings. */ }
+  }, [questReport])
+
+  function updateQuestField(field: 'deviceModel' | 'firmware' | 'browserVersion' | 'notes', value: string) {
+    setQuestReport((previous) => ({ ...previous, [field]: value.slice(0, field === 'notes' ? 1600 : 80) }))
+  }
+
+  function exportJson() {
+    return JSON.stringify(buildQuestExport(questReport, {
+      secureContext: window.isSecureContext,
+      webXRExposed: typeof navigator.xr !== 'undefined',
+      support,
+      appRevision: 'edition-05',
+    }, new Date().toISOString()), null, 2)
+  }
+
+  function downloadQuestReport() {
+    try {
+      const url = URL.createObjectURL(new Blob([exportJson()], { type: 'application/json' }))
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = 'phios-xr-quest-' + new Date().toISOString().slice(0, 10) + '.json'
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 2000)
+      setQuestNotice('JSON download requested. Review notes before sharing.')
+    } catch {
+      setQuestNotice('Download blocked by this browser. Try COPY JSON instead.')
+    }
+  }
+
+  async function copyQuestReport() {
+    try {
+      await navigator.clipboard.writeText(exportJson())
+      setQuestNotice('JSON copied to clipboard. Review notes before sharing.')
+    } catch {
+      setQuestNotice('Clipboard access denied. Try DOWNLOAD JSON after exiting XR.')
+    }
+  }
+
+  function resetQuestReport() {
+    if (!window.confirm('Reset all local Quest results, notes and session events?')) return
+    setQuestReport(createQuestReport())
+    setQuestNotice('Local Quest Device Lab results reset.')
+  }
 
   useEffect(() => {
     if (!stageRef.current) return
@@ -27,7 +86,10 @@ export function App() {
     try {
       const shell = createSpatialShell(stageRef.current, {
         onSelect: setSelectedId,
-        onSession: setSessionMode,
+        onSession: (mode) => {
+          setSessionMode(mode)
+          setQuestReport((previous) => recordQuestEvent(previous, mode ? 'start' : 'end', mode, new Date().toISOString()))
+        },
         onLayout: setLayout,
         onView: setView,
         onNote: setFieldNote,
@@ -53,7 +115,9 @@ export function App() {
       if (!shellRef.current) throw new Error('The 3D renderer did not initialize.')
       await shellRef.current.enter(mode)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not start the immersive session.')
+      const message = err instanceof Error ? err.message : 'Could not start the immersive session.'
+      setError(message)
+      setQuestReport((previous) => recordQuestEvent(previous, 'error', mode, new Date().toISOString(), message))
     }
   }
 
@@ -71,7 +135,7 @@ export function App() {
           <span className="identity-mark">Φ</span>
           <span className="identity-copy"><strong>PHIOS <em>XR</em></strong><small>THE SOVEREIGN SPATIAL SHELL</small></span>
         </a>
-        <div className="topbar-mid"><span className="status-pulse" /> EDITION 04 <span className="divider">/</span> EXPERIMENTAL PREVIEW</div>
+        <div className="topbar-mid"><span className="status-pulse" /> EDITION 05 <span className="divider">/</span> EXPERIMENTAL PREVIEW</div>
         <a className="source-link" href={GITHUB} target="_blank" rel="noopener noreferrer">SOURCE CODE <span aria-hidden="true">↗</span></a>
       </header>
 
@@ -198,6 +262,61 @@ export function App() {
           </div>
         </aside>
       </main>
+
+      <section className="quest-lab" aria-label="Quest Device Lab">
+        <details className="quest-lab-details">
+          <summary>
+            <span><strong>05 / QUEST DEVICE LAB</strong><small>Real-headset acceptance · local-only evidence</small></span>
+            <span className="quest-summary">{questSummary.PASS} / {QUEST_CHECKS.length} PASS <span aria-hidden="true">▾</span></span>
+          </summary>
+          <div className="quest-lab-body">
+            <p className="quest-lab-intro">Run these checks on a physical Quest 3. WebXR feature flags do not prove tracking, passthrough, or hand input. Nothing is uploaded automatically. Keep a clear play area and use the headset boundary.</p>
+            <div className="quest-signals" aria-label="Browser capability probes">
+              <span>SECURE CONTEXT: <b>{window.isSecureContext ? 'YES' : 'NO'}</b></span>
+              <span>WEBXR API: <b>{typeof navigator.xr !== 'undefined' ? 'EXPOSED' : 'ABSENT'}</b></span>
+              <span>VR MODE: <b>{support === null ? 'CHECKING' : support.vr ? 'AVAILABLE' : 'UNAVAILABLE'}</b></span>
+              <span>MR MODE: <b>{support === null ? 'CHECKING' : support.ar ? 'AVAILABLE' : 'UNAVAILABLE'}</b></span>
+              <span>SESSION EVENTS: <b>{questReport.events.length}</b></span>
+            </div>
+            <div className="quest-device-fields">
+              <label>HEADSET MODEL<input maxLength={80} value={questReport.deviceModel} placeholder="e.g. Quest 3" onChange={(event) => updateQuestField('deviceModel', event.target.value)} /></label>
+              <label>FIRMWARE VERSION<input maxLength={80} value={questReport.firmware} placeholder="Read from headset settings" onChange={(event) => updateQuestField('firmware', event.target.value)} /></label>
+              <label>BROWSER VERSION<input maxLength={80} value={questReport.browserVersion} placeholder="Read from browser info" onChange={(event) => updateQuestField('browserVersion', event.target.value)} /></label>
+            </div>
+            <div className="quest-matrix" aria-label="Physical Quest acceptance checklist">
+              {QUEST_CHECKS.map((check) => (
+                <div className="quest-check" key={check.id}>
+                  <span className="quest-check-id">{check.id}</span>
+                  <div className="quest-check-copy"><strong>{check.action}</strong><small>{check.expected}</small></div>
+                  <label className="quest-result">RESULT
+                    <select aria-label={check.id + ' result'} value={questReport.checks[check.id]}
+                      onChange={(event) => setQuestReport((previous) => ({
+                        ...previous, checks: { ...previous.checks, [check.id]: event.target.value as QuestStatus },
+                      }))}>
+                      <option value="NOT_TESTED">NOT TESTED</option>
+                      <option value="PASS">PASS</option>
+                      <option value="FAIL">FAIL</option>
+                      <option value="BLOCKED">BLOCKED</option>
+                    </select>
+                  </label>
+                </div>
+              ))}
+            </div>
+            <label className="quest-notes">OBSERVATIONS / BUGS / COMFORT NOTES
+              <textarea rows={4} maxLength={1600} value={questReport.notes}
+                placeholder="Describe what happened, which controller was used, and any issues. Don't include personal identifiers."
+                onChange={(event) => updateQuestField('notes', event.target.value)} />
+            </label>
+            <div className="quest-lab-actions">
+              <button type="button" onClick={downloadQuestReport}>DOWNLOAD JSON</button>
+              <button type="button" onClick={() => void copyQuestReport()}>COPY JSON</button>
+              <button type="button" className="quest-reset" onClick={resetQuestReport}>RESET RESULTS</button>
+              <span aria-live="polite" role="status">{questNotice || (questSummary.NOT_TESTED + ' still untested · ' + questSummary.FAIL + ' failed · ' + questSummary.BLOCKED + ' blocked')}</span>
+            </div>
+            <p className="quest-fineprint">Results are self-reported and stored in this browser when local storage is permitted. Session start/end and enter errors are timestamped automatically; no test is auto-passed. Downloads and clipboard exports occur only when you select them. <a href={GITHUB + '/blob/main/docs/EDITION_05.md'} target="_blank" rel="noopener noreferrer">READ TEST PROTOCOL ↗</a></p>
+          </div>
+        </details>
+      </section>
 
       <footer className="footer">
         <span>Φ ENTER THE FIELD <span className="footer-divider">/</span> LEDGER ABOVE EGO</span>
