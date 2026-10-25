@@ -106,7 +106,7 @@ function headingTexture() {
     ctx.fillText('Φ  PhiOS  XR', w / 2, 303)
     ctx.fillStyle = gold
     ctx.font = '32px monospace'
-    ctx.fillText('THE SOVEREIGN SPATIAL SHELL   /   EDITION 05', w / 2, 390)
+    ctx.fillText('THE SOVEREIGN SPATIAL SHELL   /   EDITION 07', w / 2, 390)
   })
 }
 
