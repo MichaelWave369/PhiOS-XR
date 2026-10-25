@@ -18,6 +18,9 @@ window/size/viewport_height=720
 
 [rendering]
 
+; Required to validate Android export from headless x86_64 Godot 4.6 editors.
+textures/vram_compression/import_etc2_astc=true
+
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/default_filters/use_nearest_mipmap_filter=false
