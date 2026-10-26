@@ -1,0 +1,66 @@
+name: Validate Quest TestFlight safety checks
+
+on:
+  pull_request:
+    paths:
+      - 'tools/quest-testflight.ps1'
+      - '.github/workflows/quest-testflight-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/quest-testflight.ps1'
+      - '.github/workflows/quest-testflight-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-inspection:
+    name: Windows PowerShell integrity checks (no ADB)
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create test APK fixture and validate positive case
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = Join-Path $env:RUNNER_TEMP 'phios-testflight-fixture'
+          New-Item -ItemType Directory -Path $dir -Force | Out-Null
+          Set-Content -LiteralPath (Join-Path $dir 'fixture.txt') -Value ('a' * 2000)
+          Compress-Archive -LiteralPath (Join-Path $dir 'fixture.txt') -DestinationPath (Join-Path $dir 'fixture.zip')
+          Move-Item -LiteralPath (Join-Path $dir 'fixture.zip') -Destination (Join-Path $dir 'PhiOS-XR-Quest-debug.apk')
+          $apk = Join-Path $dir 'PhiOS-XR-Quest-debug.apk'
+          $hash = (Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash
+          Set-Content -LiteralPath (Join-Path $dir 'SHA256SUMS.txt') -Value ("$hash  dist/PhiOS-XR-Quest-debug.apk")
+          Set-Content -LiteralPath (Join-Path $dir 'apk-badging.txt') -Value "package: name='org.enterthefield.phiosxr' versionCode='1'"
+          & ./tools/quest-testflight.ps1 -ArtifactDirectory $dir
+          if ($LASTEXITCODE -ne 0) { throw 'Expected integrity preflight to succeed.' }
+
+      - name: Reject tampered APK and incorrect identity
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = Join-Path $env:RUNNER_TEMP 'phios-testflight-fixture'
+          $apk = Join-Path $dir 'PhiOS-XR-Quest-debug.apk'
+          Add-Content -LiteralPath $apk -Value 'TAMPER'
+          $rejectedHash = $false
+          try {
+            & ./tools/quest-testflight.ps1 -ArtifactDirectory $dir
+          } catch {
+            if ($_.Exception.Message -match 'SHA-256 mismatch') { $rejectedHash = $true }
+          }
+          if (-not $rejectedHash) { throw 'Tampered APK was NOT rejected.' }
+          $hash = (Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash
+          Set-Content -LiteralPath (Join-Path $dir 'SHA256SUMS.txt') -Value ("$hash  dist/PhiOS-XR-Quest-debug.apk")
+          Set-Content -LiteralPath (Join-Path $dir 'apk-badging.txt') -Value "package: name='com.example.unknown'"
+          $rejectedIdentity = $false
+          try {
+            & ./tools/quest-testflight.ps1 -ArtifactDirectory $dir
+          } catch {
+            if ($_.Exception.Message -match 'does not identify the expected') { $rejectedIdentity = $true }
+          }
+          if (-not $rejectedIdentity) { throw 'Mismatched package metadata was NOT rejected.' }
+
+# No real device, ADB connection, or installation occurs in this workflow.
