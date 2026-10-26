@@ -149,3 +149,12 @@ This is still **not tested on physical Quest hardware**, does not replace Meta H
 ## Edition 09: Native controller input readiness
 
 The **native Godot** app now carries a minimal explicit OpenXR action map, tracked controller aim beams, in-world press/hit counters and head-forward dwell selection of *read-only* portal cards. This is separate from Edition 07's WebXR browser diagnostics. The [Edition 09 test protocol](docs/EDITION_09.md) makes no on-headset claims until real Quest 3 testing. Both native CI and the debug APK workflow must remain green before considering installation.
+
+
+## Edition 10: Quest TestFlight, the real-device gate
+
+A Windows-friendly **local-only Quest test kit** is now bundled with every successful native APK Actions artifact. After extracting the ZIP, `quest-testflight.ps1` verifies SHA-256 and Android package metadata by default, without touching a headset. A user must expressly supply `-Install`, connect **one authorized USB Quest**, and type `INSTALL` before it uses supported ADB sideloading. `-CaptureLogs` is separate, opt-in, and saves filtered diagnostics locally for review.
+
+No firmware flashes, bootloader access, automatic uninstalls, remote uploads, secrets, or automatic execution are introduced. Native immersive display and controller compatibility remain **NOT_TESTED on physical Quest hardware**.
+
+See the [Edition 10 Quest TestFlight runbook](docs/EDITION_10.md) and [Windows PowerShell test tool](tools/quest-testflight.ps1). Only obtain debug APKs from this repo's successful GitHub Actions runs.
