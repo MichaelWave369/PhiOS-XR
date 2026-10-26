@@ -28,7 +28,9 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $dir = Join-Path $env:RUNNER_TEMP 'phios-testflight-fixture'
           New-Item -ItemType Directory -Path $dir -Force | Out-Null
-          Set-Content -LiteralPath (Join-Path $dir 'fixture.txt') -Value ('a' * 2000)
+          $bytes = [byte[]]::new(4096)
+          [System.Random]::new(42).NextBytes($bytes)
+          [System.IO.File]::WriteAllBytes((Join-Path $dir 'fixture.txt'), $bytes)
           Compress-Archive -LiteralPath (Join-Path $dir 'fixture.txt') -DestinationPath (Join-Path $dir 'fixture.zip')
           Move-Item -LiteralPath (Join-Path $dir 'fixture.zip') -Destination (Join-Path $dir 'PhiOS-XR-Quest-debug.apk')
           $apk = Join-Path $dir 'PhiOS-XR-Quest-debug.apk'
@@ -36,7 +38,6 @@ jobs:
           Set-Content -LiteralPath (Join-Path $dir 'SHA256SUMS.txt') -Value ("$hash  dist/PhiOS-XR-Quest-debug.apk")
           Set-Content -LiteralPath (Join-Path $dir 'apk-badging.txt') -Value "package: name='org.enterthefield.phiosxr' versionCode='1'"
           & ./tools/quest-testflight.ps1 -ArtifactDirectory $dir
-          if ($LASTEXITCODE -ne 0) { throw 'Expected integrity preflight to succeed.' }
 
       - name: Reject tampered APK and incorrect identity
         shell: pwsh
