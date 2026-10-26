@@ -5,11 +5,15 @@ on:
     paths:
       - 'native/quest-godot/**'
       - '.github/workflows/native-debug-apk.yml'
+      - 'tools/quest-testflight.ps1'
+      - 'docs/EDITION_10.md'
   push:
     branches: [main]
     paths:
       - 'native/quest-godot/**'
       - '.github/workflows/native-debug-apk.yml'
+      - 'tools/quest-testflight.ps1'
+      - 'docs/EDITION_10.md'
   workflow_dispatch:
 
 permissions:
@@ -110,6 +114,12 @@ jobs:
           sha256sum dist/PhiOS-XR-Quest-debug.apk | tee dist/SHA256SUMS.txt
           echo "APK exported. This does NOT verify Quest 3 runtime compatibility."
 
+      - name: Bundle Windows Quest TestFlight kit
+        shell: bash
+        run: |
+          cp tools/quest-testflight.ps1 dist/quest-testflight.ps1
+          cp docs/EDITION_10.md dist/Quest-TestFlight-README.md
+
       - name: Upload short-lived build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -118,6 +128,8 @@ jobs:
             dist/PhiOS-XR-Quest-debug.apk
             dist/SHA256SUMS.txt
             dist/apk-badging.txt
+            dist/quest-testflight.ps1
+            dist/Quest-TestFlight-README.md
           if-no-files-found: error
           retention-days: 7
 
