@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { detectXRSupport, type ImmersiveMode, type XRAvailability } from './capabilities'
-import { getPortal, portals } from './catalog'
+import { getPortal, getVrWorld, portals, vrWorlds } from './catalog'
 import type { LayoutPreset } from './workspace'
 import { createSpatialShell, type ClockDisplay, type SpatialShell, type ViewMode } from './world'
 import { MAX_NOTE_CHARS } from './fieldtools'
@@ -127,8 +127,10 @@ export function App() {
   }
 
   function choose(id: string) {
+    const shell = shellRef.current
+    shell?.setView(getVrWorld(id) ? 'worlds' : 'portals')
+    shell?.select(id)
     setSelectedId(id)
-    shellRef.current?.select(id)
   }
 
   return (
@@ -157,6 +159,18 @@ export function App() {
                 key={portal.id} onClick={() => choose(portal.id)}>
                 <span className="portal-number">{portal.number}</span>
                 <span className="portal-name">{portal.name}<small>{portal.subtitle}</small></span>
+                <span className="portal-chevron">↗</span>
+              </button>
+            ))}
+          </nav>
+          <div className="rail-caption vr-rail-caption">VR WORLDS <span>03</span></div>
+          <nav className="portal-nav world-nav" aria-label="VR worlds">
+            {vrWorlds.map((world) => (
+              <button className={selectedId === world.id && view === 'worlds' ? 'portal-link active' : 'portal-link'}
+                aria-current={selectedId === world.id && view === 'worlds' ? 'page' : undefined}
+                key={world.id} onClick={() => choose(world.id)}>
+                <span className="portal-number">{world.number}</span>
+                <span className="portal-name">{world.name}<small>{world.subtitle}</small></span>
                 <span className="portal-chevron">↗</span>
               </button>
             ))}
@@ -213,16 +227,28 @@ export function App() {
             </div>
           </div>
           <div className="field-view-switch" role="group" aria-label="Spatial workspace mode">
-            <div><strong>SPATIAL SURFACES</strong><small>PORTALS / FIRST-PARTY TOOLS</small></div>
+            <div><strong>SPATIAL SURFACES</strong><small>PORTALS / VR WORLDS / FIELD TOOLS</small></div>
             <div className="layout-actions">
               <button className={view === 'portals' ? 'layout-action is-active' : 'layout-action'}
                 aria-pressed={view === 'portals'}
                 onClick={() => shellRef.current?.setView('portals')}>PORTALS</button>
+              <button className={view === 'worlds' ? 'layout-action is-active' : 'layout-action'}
+                aria-pressed={view === 'worlds'}
+                onClick={() => shellRef.current?.setView('worlds')}>VR WORLDS</button>
               <button className={view === 'tools' ? 'layout-action is-active' : 'layout-action'}
                 aria-pressed={view === 'tools'}
                 onClick={() => shellRef.current?.setView('tools')}>FIELD TOOLS</button>
             </div>
           </div>
+          {view === 'worlds' && <div className="vr-world-links" aria-label="Open VR destinations">
+            {vrWorlds.map((world) => (
+              <a className="vr-world-direct-link" key={world.id}
+                href={world.href} target="_blank" rel="noopener noreferrer">
+                <strong>{world.name}</strong><small>{world.subtitle}</small><span aria-hidden="true">↗</span>
+              </a>
+            ))}
+            <p>Inside VR, select a world card and press <strong>OPEN WORLD</strong> using a controller. This leaves the PhiOS XR shell and opens that site in the current browser tab. Each destination has its own VR entry controls.</p>
+          </div>}
           {view === 'tools' && <div className="field-tools-editor">
             <label className="field-pad-editor">
               <strong>FIELD PAD <span>LOCAL / {fieldNote.length} OF {MAX_NOTE_CHARS}</span></strong>
@@ -263,7 +289,7 @@ export function App() {
         </section>
 
         <aside className="inspector">
-          <div className="inspector-head"><span>ACTIVE PORTAL</span><span className="inspector-count">{selected.number} / 06</span></div>
+          <div className="inspector-head"><span>{getVrWorld(selected.id) ? 'VR WORLD' : 'ACTIVE PORTAL'}</span><span className="inspector-count">{selected.number} / {getVrWorld(selected.id) ? '03' : '06'}</span></div>
           <div className="hero-glyph" aria-hidden="true"><div className="glyph-circles"><span>Φ</span></div><small>ACCESS / REVIEWED</small></div>
           <div className="inspector-main">
             <div className="inspector-overline">PORTAL {selected.number}  /  {selected.kind.toUpperCase()}</div>
@@ -271,7 +297,7 @@ export function App() {
             <div className="inspector-subtitle">{selected.subtitle}</div>
             <p>{selected.description}</p>
             <a className="open-portal" href={selected.href} target="_blank" rel="noopener noreferrer">
-              OPEN EXTERNAL PROJECT <span aria-hidden="true">↗</span>
+              {getVrWorld(selected.id) ? 'OPEN VR WORLD' : 'OPEN EXTERNAL PROJECT'} <span aria-hidden="true">↗</span>
             </a>
           </div>
           <div className="inspector-foot">

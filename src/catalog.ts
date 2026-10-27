@@ -41,6 +41,29 @@ export const portals: readonly Portal[] = [
   }
 ]
 
+/** Curated, external WebXR destinations. Separate from the six saved PhiOS portals. */
+export const vrWorlds: readonly Portal[] = [
+  {
+    id: 'domistika-xr', name: 'DOMISTIKA XR', subtitle: 'Spatial sketch studio',
+    description: 'Draw on floating canvases in desktop, VR, or mixed reality. Opens a separate, experimental Domistika XR site.',
+    href: 'https://michaelwave369.github.io/Domistika/xr.html', kind: 'creative', number: 'V1'
+  },
+  {
+    id: 'btm-vr', name: 'BREAK THE MATRIX', subtitle: 'Neon Signal · VR combat',
+    description: 'Michael Wave and Ori in a twelve-sector shooter. Choose Immersive VR or VR Arcade after opening the game.',
+    href: 'https://michaelwave369.github.io/BTM/', kind: 'creative', number: 'V2'
+  },
+  {
+    id: 'spark-vr', name: 'SPARK THE SUBSTRATE', subtitle: 'Immersive two-room lab',
+    description: 'Explore the dedicated Spark WebXR prototype, with a desktop fallback and experimental Quest controls.',
+    href: 'https://michaelwave369.github.io/SparkTheSubstrate/vr/', kind: 'exploration', number: 'V3'
+  }
+]
+
+export function getVrWorld(id: string): Portal | undefined {
+  return vrWorlds.find((world) => world.id === id)
+}
+
 export function getPortal(id: string): Portal | undefined {
-  return portals.find((portal) => portal.id === id)
+  return portals.find((portal) => portal.id === id) ?? getVrWorld(id)
 }
