@@ -1,11 +1,11 @@
 import * as THREE from 'three'
-import { portals } from './catalog'
+import { getPortal, getVrWorld, portals, vrWorlds, type Portal } from './catalog'
 import type { ImmersiveMode } from './capabilities'
 import { emptyDiagnostics, nextGaze, safeGazeTarget, type GazeState, type XRInputDiagnostics } from './xr-input'
 import { calculateWorkspaceAnchor } from './layout'
 import { clearWorkspace, clampPanelSize, clampPosition, loadWorkspace, presetPanels, saveWorkspace, type LayoutPreset } from './workspace'
 import { applyPadKey, elapsedClock, formatClock, loadPad, newClock, pauseClock, sanitizeNote, savePad, startClock, type ClockState } from './fieldtools'
-export type ViewMode = 'portals' | 'tools'
+export type ViewMode = 'portals' | 'tools' | 'worlds'
 export type ClockDisplay = { time: string; running: boolean }
 
 export type SpatialShell = {
@@ -55,8 +55,8 @@ const ink = '#ebf8f8'
 const mint = '#79ece0'
 const gold = '#dabc82'
 
-function portalTexture(index: number, selected: boolean) {
-  const portal = portals[index]
+function portalTexture(index: number, selected: boolean, source: readonly Portal[] = portals) {
+  const portal = source[index]
   return makeTexture((ctx, w, h) => {
     const bg = ctx.createLinearGradient(0, 0, w, h)
     bg.addColorStop(0, selected ? '#163c48' : '#102838')
@@ -111,7 +111,7 @@ function headingTexture() {
 }
 
 function detailTexture(id: string) {
-  const entry = portals.find((item) => item.id === id) ?? portals[0]
+  const entry = getPortal(id) ?? portals[0]
   return makeTexture((ctx, w) => {
     const bg = ctx.createLinearGradient(0, 0, w, 0)
     bg.addColorStop(0, '#09212b')
@@ -260,6 +260,16 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   }
   cards.forEach((_, index) => positionHandle(index))
 
+  // Three standalone XR worlds, kept out of the existing six-portal saved layout.
+  const worldCards: THREE.Mesh[] = vrWorlds.map((world, index) => {
+    const card = plane(portalTexture(index, false, vrWorlds), 1.23, 0.79)
+    card.position.set((index - 1) * 1.38, 1.67, -2.65)
+    card.userData.portalId = world.id
+    card.visible = false
+    workspace.add(card)
+    return card
+  })
+
   const details = plane(detailTexture('phios'), 1.85, 0.9)
   details.position.set(0, 0.19, -2.7)
   details.rotation.x = -0.19
@@ -267,13 +277,14 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
 
   // WebXR renders the canvas, not the surrounding HTML; add in-headset controls.
   const controls = [
-    { action: 'portals', label: 'PORTALS', hint: 'PROJECTS', y: 2.93 },
-    { action: 'tools', label: 'TOOLS', hint: 'LIVE APPS', y: 2.55 },
-    { action: 'arc', label: 'ARC', hint: 'CURVED', y: 2.17 },
-    { action: 'wall', label: 'WALL', hint: 'FLAT GRID', y: 1.79 },
-    { action: 'reset', label: 'RESET', hint: 'RECOVER', y: 1.41 },
-    { action: 'recenter', label: 'RE-CENTER', hint: 'FACE FORWARD', y: 1.03 },
-    { action: 'exit', label: 'EXIT XR', hint: 'END SESSION', y: 0.65 },
+    { action: 'portals', label: 'PORTALS', hint: 'PROJECTS', y: 3.04 },
+    { action: 'worlds', label: 'VR WORLDS', hint: '3 DESTINATIONS', y: 2.67 },
+    { action: 'tools', label: 'TOOLS', hint: 'LIVE APPS', y: 2.30 },
+    { action: 'arc', label: 'ARC', hint: 'CURVED', y: 1.93 },
+    { action: 'wall', label: 'WALL', hint: 'FLAT GRID', y: 1.56 },
+    { action: 'reset', label: 'RESET', hint: 'RECOVER', y: 1.19 },
+    { action: 'recenter', label: 'RE-CENTER', hint: 'FACE FORWARD', y: 0.82 },
+    { action: 'exit', label: 'EXIT XR', hint: 'END SESSION', y: 0.45 },
   ] as const
   const actionPanels = controls.map(({ action, label, hint, y }) => {
     const control = plane(actionTexture(label, hint), 0.78, 0.35)
@@ -282,6 +293,14 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     workspace.add(control)
     return control
   })
+  // Explicit controller click on this button navigates the current Quest Browser tab.
+  // Gaze selection alone can NEVER activate external navigation.
+  const openWorldPanel = plane(actionTexture('OPEN WORLD', 'LEAVE PHIOS XR'), 1.75, 0.48)
+  openWorldPanel.position.set(0, 0.80, -2.50)
+  openWorldPanel.userData.action = 'launch-world'
+  openWorldPanel.visible = false
+  workspace.add(openWorldPanel)
+
   // First-party spatial tools are interactive WebGL surfaces, not embedded websites.
   const toolGroup = new THREE.Group()
   toolGroup.visible = false
@@ -399,8 +418,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   addKey('CLEAR', 0.35, 0.64, 0.46, 'pad')
   addKey('TOGGLE', 1.07, 1.28, 0.48, 'clock')
   addKey('RESET', 1.64, 1.28, 0.48, 'clock')
-  const targets: THREE.Mesh[] = [...cards, ...resizeHandles, ...actionPanels, ...keyMeshes]
-  const gazeTargets: THREE.Mesh[] = [...cards, ...actionPanels]
+  const targets: THREE.Mesh[] = [...cards, ...worldCards, openWorldPanel, ...resizeHandles, ...actionPanels, ...keyMeshes]
+  const gazeTargets: THREE.Mesh[] = [...cards, ...worldCards, ...actionPanels]
   const gazeReticle = new THREE.Mesh(
     new THREE.RingGeometry(0.027, 0.049, 28),
     new THREE.MeshBasicMaterial({ color: '#a6f6dd', side: THREE.DoubleSide, depthTest: false }),
@@ -567,6 +586,10 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     details.visible = mode === 'portals'
     cards.forEach((card) => { card.visible = mode === 'portals' })
     resizeHandles.forEach((handle) => { handle.visible = mode === 'portals' })
+    worldCards.forEach((card) => { card.visible = mode === 'worlds' })
+    openWorldPanel.visible = mode === 'worlds'
+    if (mode === 'worlds' && !getVrWorld(selected)) activate(vrWorlds[0].id)
+    if (mode === 'portals' && !portals.some((portal) => portal.id === selected)) activate(portals[0].id)
     callbacks.onView(view)
   }
   function setNote(text: string) {
@@ -646,6 +669,13 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     else if (id) activate(id)
     else if (action === 'tools') setView('tools')
     else if (action === 'portals') setView('portals')
+    else if (action === 'worlds') setView('worlds')
+    else if (action === 'launch-world' && view === 'worlds') {
+      const world = getVrWorld(selected)
+      // Navigation occurs only on explicit controller select / pointer click.
+      // It leaves PhiOS XR rather than trying to embed another immersive session.
+      if (world) window.location.assign(world.href)
+    }
     else if (action === 'arc') arrange('arc')
     else if (action === 'wall') arrange('wall')
     else if (action === 'reset') reset()
@@ -715,8 +745,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
 
   let selected = 'phios'
   function setSelected(id: string) {
-    const next = portals.findIndex((portal) => portal.id === id)
-    if (next < 0 || selected === id) return
+    if (!getPortal(id) || selected === id) return
     selected = id
     cards.forEach((card, index) => {
       const material = card.material as THREE.MeshBasicMaterial
@@ -725,6 +754,12 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       material.needsUpdate = true
       if (previous) previous.dispose()
       cardTextures[index] = material.map
+    })
+    worldCards.forEach((card, index) => {
+      const material = card.material as THREE.MeshBasicMaterial
+      material.map?.dispose()
+      material.map = portalTexture(index, vrWorlds[index].id === id, vrWorlds)
+      material.needsUpdate = true
     })
     const material = details.material as THREE.MeshBasicMaterial
     material.map?.dispose()
@@ -858,7 +893,12 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       const material = handle.material as THREE.MeshBasicMaterial
       material.color.setHex(hovered.has(handle) ? 0xffffff : 0xdcbf82)
     })
+    worldCards.forEach((card) => {
+      const material = card.material as THREE.MeshBasicMaterial
+      material.color.setHex(hovered.has(card) ? 0xc3fff1 : 0xffffff)
+    })
     actionPanels.forEach((panel) => panel.scale.setScalar(hovered.has(panel) ? 1.08 : 1))
+    openWorldPanel.scale.setScalar(hovered.has(openWorldPanel) ? 1.06 : 1)
     renderer.render(scene, camera)
     // Render has updated the XR camera pose; use it for head-gaze raycasts.
     updateGaze(time)
