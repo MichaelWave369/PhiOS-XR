@@ -14,7 +14,7 @@ export type XRInputDiagnostics = {
 export type GazeState = { target: string | null; since: number; fired: boolean }
 export const GAZE_DWELL_MS = 2300
 
-const SAFE_ACTIONS = ['portals', 'tools', 'arc', 'wall'] as const
+const SAFE_ACTIONS = ['portals', 'worlds', 'tools', 'arc', 'wall'] as const
 export type GazeAction = (typeof SAFE_ACTIONS)[number]
 
 export function safeGazeTarget(portalId?: string, action?: string): string | null {
