@@ -260,10 +260,16 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   }
   cards.forEach((_, index) => positionHandle(index))
 
-  // Three standalone XR worlds, kept out of the existing six-portal saved layout.
+  // Curated XR worlds remain separate from the six-portal saved layout.
+  // Arrange up to three portals per row. Center partial rows so five cards
+  // remain comfortably within the field without covering the right-hand dock.
   const worldCards: THREE.Mesh[] = vrWorlds.map((world, index) => {
     const card = plane(portalTexture(index, false, vrWorlds), 1.23, 0.79)
-    card.position.set((index - 1) * 1.38, 1.67, -2.65)
+    const columns = Math.min(3, vrWorlds.length)
+    const row = Math.floor(index / columns)
+    const rowCount = Math.min(columns, vrWorlds.length - row * columns)
+    const column = index % columns
+    card.position.set((column - (rowCount - 1) / 2) * 1.15, 2.30 - row * 0.97, -2.65)
     card.userData.portalId = world.id
     card.visible = false
     workspace.add(card)
@@ -278,7 +284,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   // WebXR renders the canvas, not the surrounding HTML; add in-headset controls.
   const controls = [
     { action: 'portals', label: 'PORTALS', hint: 'PROJECTS', y: 3.04 },
-    { action: 'worlds', label: 'VR WORLDS', hint: '3 DESTINATIONS', y: 2.67 },
+    { action: 'worlds', label: 'VR WORLDS', hint: '5 DESTINATIONS', y: 2.67 },
     { action: 'tools', label: 'TOOLS', hint: 'LIVE APPS', y: 2.30 },
     { action: 'arc', label: 'ARC', hint: 'CURVED', y: 1.93 },
     { action: 'wall', label: 'WALL', hint: 'FLAT GRID', y: 1.56 },
@@ -296,7 +302,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   // Explicit controller click on this button navigates the current Quest Browser tab.
   // Gaze selection alone can NEVER activate external navigation.
   const openWorldPanel = plane(actionTexture('OPEN WORLD', 'LEAVE PHIOS XR'), 1.75, 0.48)
-  openWorldPanel.position.set(0, 0.80, -2.50)
+  openWorldPanel.position.set(0, 0.57, -2.50)
   openWorldPanel.userData.action = 'launch-world'
   openWorldPanel.visible = false
   workspace.add(openWorldPanel)
