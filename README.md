@@ -26,17 +26,21 @@ npm run build
 npm run preview
 ```
 
-## VR Worlds launchpad (Domistika XR, Break the Matrix, Spark)
+## VR Worlds launchpad (Domistika XR, Break the Matrix, Spark, Pulse 369 and LENZ)
 
-The WebXR shell now has a dedicated **VR WORLDS** view accessible from the 2D mode switch and the in-world side dock. Three spatial launch cards and accessible browser links point to:
+The WebXR shell now has a dedicated **VR WORLDS** view accessible from the 2D mode switch and the in-world side dock. Five spatial launch cards, arranged in two rows, and accessible browser links point to:
 
 - **Domistika XR:** https://michaelwave369.github.io/Domistika/xr.html
 - **Break the Matrix:** https://michaelwave369.github.io/BTM/ (choose Immersive VR or VR Arcade inside the game)
 - **Spark the Substrate VR:** https://michaelwave369.github.io/SparkTheSubstrate/vr/
+- **Pulse 369 Quest Lab:** https://michaelwave369.github.io/Pulse369/quest.html (public VR controller/tracking and rhythm testing, **not** the full account-backed fitness app)
+- **LENZ XR:** https://michaelwave369.github.io/LENZ/xr.html (experimental, stationary immersive portals across the four LENZ experience zones; full VR game mechanics not yet implemented)
 
 **Quest path:** open PhiOS XR in Quest Browser, choose **ENTER VR**, point a controller at **VR WORLDS**, then point/select a world card and press the separate **OPEN WORLD · LEAVE PHIOS XR** control. Navigation is a normal outbound HTTPS browser navigation in the current tab; this leaves the PhiOS XR immersive shell. Enter the destination's own immersive mode using its on-page controls. Gaze dwell can select a world or switch views but **cannot launch** a destination. If navigation is blocked by headset browser policy, exit the session and use the 2D **OPEN VR WORLD** or quick-link anchors instead.
 
-The three destinations are curated links, not embedded apps, a shared WebXR session, cross-origin scene access, or an OS-level app launcher. They do not receive PhiOS runtime authority. The six original portals and their version-1 saved panel arrangement remain unchanged. New in-headset launch behavior needs physical Quest validation before claiming compatibility.
+**Pulse 369 access note:** The public showcase at https://michaelwave369.github.io/Pulse369/ describes the full studio, but the playable account-backed app at https://pulse-369.larrina.chatgpt.site/ returned HTTP 401 during verification. The launcher therefore uses the public **Quest Lab**, which is accessible without a sign-in. The full studio has not been treated as publicly reachable.
+
+The five destinations are curated links, not embedded apps, a shared WebXR session, cross-origin scene access, or an OS-level app launcher. They do not receive PhiOS runtime authority. The six original portals and their version-1 saved panel arrangement remain unchanged. New in-headset launch behavior needs physical Quest validation before claiming compatibility.
 
 ## Quest 3 testing
 
