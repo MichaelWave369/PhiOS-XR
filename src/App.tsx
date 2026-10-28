@@ -163,7 +163,7 @@ export function App() {
               </button>
             ))}
           </nav>
-          <div className="rail-caption vr-rail-caption">VR WORLDS <span>03</span></div>
+          <div className="rail-caption vr-rail-caption">VR WORLDS <span>{String(vrWorlds.length).padStart(2, '0')}</span></div>
           <nav className="portal-nav world-nav" aria-label="VR worlds">
             {vrWorlds.map((world) => (
               <button className={selectedId === world.id && view === 'worlds' ? 'portal-link active' : 'portal-link'}
@@ -289,7 +289,7 @@ export function App() {
         </section>
 
         <aside className="inspector">
-          <div className="inspector-head"><span>{getVrWorld(selected.id) ? 'VR WORLD' : 'ACTIVE PORTAL'}</span><span className="inspector-count">{selected.number} / {getVrWorld(selected.id) ? '03' : '06'}</span></div>
+          <div className="inspector-head"><span>{getVrWorld(selected.id) ? 'VR WORLD' : 'ACTIVE PORTAL'}</span><span className="inspector-count">{selected.number} / {getVrWorld(selected.id) ? String(vrWorlds.length).padStart(2, '0') : '06'}</span></div>
           <div className="hero-glyph" aria-hidden="true"><div className="glyph-circles"><span>Φ</span></div><small>ACCESS / REVIEWED</small></div>
           <div className="inspector-main">
             <div className="inspector-overline">PORTAL {selected.number}  /  {selected.kind.toUpperCase()}</div>
