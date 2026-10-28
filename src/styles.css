@@ -89,3 +89,52 @@
 .vr-world-links p{grid-column:1/-1;margin:0;color:#9cbdc5;font-size:11px;line-height:1.6}
 .vr-world-links p strong{color:#e3c58d}
 @media(max-width:750px){.world-nav{grid-template-columns:1fr 1fr}.vr-world-links{grid-template-columns:1fr}.vr-world-links p{grid-column:1}}
+
+
+/* Neon Highway: world-deck-only art direction, keeping accessibility and core views intact. */
+.vr-worlds-active{background:#050916;color:#f5f1ec}
+.vr-worlds-active .topbar{background:linear-gradient(90deg,#080d20,#142039 56%,#171126);border-bottom:1px solid #683a64}
+.vr-worlds-active .identity-mark{color:#ffe0a4;border-color:#f38880;background:linear-gradient(145deg,#572c59,#141b38);box-shadow:0 0 26px #fd568c43}
+.vr-worlds-active .identity-copy em{color:#fd89ac}
+.vr-worlds-active .rail{background:linear-gradient(180deg,#0b1630,#12152d 58%,#0d182a);border-right-color:#603352}
+.vr-worlds-active .rail h1 i{color:#ffb47a}
+.vr-worlds-active .rail .intro{color:#a7c7d2}
+.vr-worlds-active .rail-caption{color:#ffbf92;border-bottom-color:#71455c}
+.vr-worlds-active .portal-link.active{background:linear-gradient(90deg,#493250,#132a44);border-color:#b45e88;box-shadow:inset 3px 0 #ff9a81}
+.vr-worlds-active .portal-link:hover{background:#30243d;color:#fff5e8}
+.vr-worlds-active .portal-number{color:#ffb479}
+.vr-worlds-active .stage{background:radial-gradient(ellipse at 50% 32%,#432c63,#1c2547 46%,#060d1e 90%);border-color:#8f4d7d;box-shadow:inset 0 0 85px #070d24,0 22px 60px #0007}
+.vr-worlds-active .stage-overlay-top{color:#ffc08f}
+.vr-worlds-active .stage-overlay-bottom{color:#97cdd3}
+.vr-worlds-active .transport{background:linear-gradient(90deg,#17142e,#192a42);border-color:#583a67}
+.vr-worlds-active .transport-text strong{color:#ffd39b}
+.vr-worlds-active .mode-button.vr{background:linear-gradient(115deg,#ffb86d,#f58396);border-color:#ffdcac;color:#21152d}
+.vr-worlds-active .mode-button.mr{border-color:#886b8c;color:#d7edf2}
+.vr-worlds-active .inspector{background:linear-gradient(180deg,#0c1b34,#16122c);border-left-color:#6e426d}
+.vr-worlds-active .inspector-head{border-bottom-color:#664363}
+.vr-worlds-active .hero-glyph{background:radial-gradient(circle at center,#f7749126,transparent 60%)}
+.vr-worlds-active .glyph-circles{border-color:#ef8798}
+.vr-worlds-active .glyph-circles span{color:#ffba89;text-shadow:0 0 24px #ff5c91}
+.vr-worlds-active .inspector-overline,.vr-worlds-active .inspector-count{color:#ffb88e}
+.vr-worlds-active .open-portal{background:linear-gradient(90deg,#512b52,#20364f);border-color:#b86791;color:#fff5ec}
+.vr-worlds-active .open-portal:hover{background:#6d4165}
+.vr-worlds-active .field-view-switch{border-color:#6c416c}
+.vr-worlds-active .layout-action.is-active{border-color:#f3939d;color:#ffeccf}
+.vr-worlds-active .vr-world-links{border-color:#71466a;background:#0d152b}
+.vr-worlds-active .vr-world-direct-link{background:linear-gradient(140deg,#302342,#112a3f);border-color:#835474}
+.vr-worlds-active .vr-world-direct-link:hover{border-color:#ffb982;background:#493052}
+.vr-worlds-active .vr-world-direct-link strong{color:#fff3e9}
+.vr-worlds-active .vr-world-direct-link span{color:#ffb578}
+.vr-deck-controls{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 17px;border:1px solid #925373;background:linear-gradient(100deg,#271d42,#152943)}
+.vr-deck-controls>div:first-child{display:flex;flex-direction:column;gap:6px}
+.vr-deck-controls strong{color:#ffd4a1;font-size:13px;font-weight:850;letter-spacing:.13em}
+.vr-deck-controls small{color:#b3d6de;font-size:10px;letter-spacing:.08em}
+.vr-deck-actions{display:flex;gap:8px;flex-wrap:wrap}
+.vr-deck-actions button{min-height:42px;min-width:88px;padding:10px 15px;color:#ecf7f8;background:#182e44;border:1px solid #688da1;font-size:11px;font-weight:850;letter-spacing:.06em}
+.vr-deck-actions button:hover{background:#304d60;border-color:#7decdb}
+.vr-deck-actions .shuffle-button{background:linear-gradient(130deg,#d9548d,#f7a364);border-color:#ffc38a;color:#1e1630}
+.vr-deck-actions .shuffle-button:hover{filter:brightness(1.13)}
+.vr-deck-actions button:focus-visible{outline:3px solid #ffe5ab;outline-offset:3px}
+@media(max-width:950px){.vr-deck-controls{flex-direction:column;align-items:stretch}.vr-deck-actions button{flex:1}.vr-deck-actions{justify-content:stretch}}
+@media(max-width:400px){.vr-deck-actions button{min-width:0;padding:9px 7px;font-size:10px}}
+@media(prefers-reduced-motion:reduce){.vr-worlds-active *{transition:none!important}}
