@@ -39,14 +39,20 @@ describe('five curated VR destinations', () => {
     expect(safeGazeTarget('pulse369-vr')).toBe('portal:pulse369-vr')
     expect(safeGazeTarget(undefined, 'worlds')).toBe('action:worlds')
     expect(safeGazeTarget(undefined, 'launch-world')).toBeNull()
+    expect(safeGazeTarget(undefined, 'deck-shuffle')).toBeNull()
+    expect(safeGazeTarget(undefined, 'deck-prev')).toBeNull()
+    expect(safeGazeTarget(undefined, 'deck-next')).toBeNull()
   })
 
-  it('keeps the five spatial panels in a two-row layout distinct from the saved six', () => {
+  it('uses a near-field three-card carousel, separate from the six saved system panels', () => {
     const source = readFileSync(new URL('./world.ts', import.meta.url), 'utf8')
-    expect(source).toContain('const columns = Math.min(3, vrWorlds.length)')
-    expect(source).toContain('const row = Math.floor(index / columns)')
-    expect(source).toContain('const rowCount = Math.min(columns, vrWorlds.length - row * columns)')
-    expect(source).toContain('2.30 - row * 0.97')
+    expect(source).toContain('const slots = deckSlots(deck)')
+    expect(source).toContain("card.visible = view === 'worlds' && !!position")
+    expect(source).toContain("side === 0 ? -1.97 : -2.36")
+    expect(source).toContain('createOutrunBackdrop(decor)')
+    expect(source).toContain("scene.background = mode === 'immersive-ar' ? null")
+    expect(source).toContain("else if (action === 'deck-shuffle' && view === 'worlds')")
+    expect(source).toContain("deckAction: (action: 'previous' | 'next' | 'shuffle') => void")
   })
 
   it('requires explicit spatial OPEN WORLD activation for navigation', () => {
