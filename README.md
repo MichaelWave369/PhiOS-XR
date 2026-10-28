@@ -28,7 +28,7 @@ npm run preview
 
 ## VR Worlds launchpad (Domistika XR, Break the Matrix, Spark, Pulse 369 and LENZ)
 
-The WebXR shell now has a dedicated **VR WORLDS** view accessible from the 2D mode switch and the in-world side dock. Five spatial launch cards, arranged in two rows, and accessible browser links point to:
+The WebXR shell opens into a **synthwave / OutRun-inspired VR WORLDS deck**, with a generated sunset, silhouetted skyline, perspective neon road grid, stars and five original canvas-drawn world cards. Three cards appear at a time: a large focused destination and two angled previews. The six original, movable PhiOS core portals remain available under **PORTALS** without changing their saved layout. Desktop controls, the 2D mode switch and in-headset controls share the same deck. The five destinations are:
 
 - **Domistika XR:** https://michaelwave369.github.io/Domistika/xr.html
 - **Break the Matrix:** https://michaelwave369.github.io/BTM/ (choose Immersive VR or VR Arcade inside the game)
@@ -36,9 +36,11 @@ The WebXR shell now has a dedicated **VR WORLDS** view accessible from the 2D mo
 - **Pulse 369 Quest Lab:** https://michaelwave369.github.io/Pulse369/quest.html (public VR controller/tracking and rhythm testing, **not** the full account-backed fitness app)
 - **LENZ XR:** https://michaelwave369.github.io/LENZ/xr.html (experimental, stationary immersive portals across the four LENZ experience zones; full VR game mechanics not yet implemented)
 
-**Quest path:** open PhiOS XR in Quest Browser, choose **ENTER VR**, point a controller at **VR WORLDS**, then point/select a world card and press the separate **OPEN WORLD · LEAVE PHIOS XR** control. Navigation is a normal outbound HTTPS browser navigation in the current tab; this leaves the PhiOS XR immersive shell. Enter the destination's own immersive mode using its on-page controls. Gaze dwell can select a world or switch views but **cannot launch** a destination. If navigation is blocked by headset browser policy, exit the session and use the 2D **OPEN VR WORLD** or quick-link anchors instead.
+**Quest path:** open PhiOS XR in Quest Browser and choose **ENTER VR**. The **VR WORLDS** deck is now the landing view. Point/trigger **PREV** or **NEXT** to move through the five worlds, **SHUFFLE** to randomize the deck, or select either side card to bring that world forward. Then point/trigger the separate **OPEN WORLD · LEAVE PHIOS XR** control to navigate. There is also a complete 2D accessible deck and direct HTTPS links. Gaze assist may select cards but **never** activates shuffle, previous/next, or external navigation. This leaves the PhiOS XR immersive session for the destination site's own VR entry. If Quest Browser blocks navigation from immersive mode, exit XR and use the direct 2D link instead.
 
 **Pulse 369 access note:** The public showcase at https://michaelwave369.github.io/Pulse369/ describes the full studio, but the playable account-backed app at https://pulse-369.larrina.chatgpt.site/ returned HTTP 401 during verification. The launcher therefore uses the public **Quest Lab**, which is accessible without a sign-in. The full studio has not been treated as publicly reachable.
+
+**Visual/performance boundaries:** All scenery and world-card art is original, generated locally by Three.js geometry and Canvas textures. No downloaded images, network shaders, autoplay audio or flashing animation are used. The scenery disappears in MR so it does not obscure passthrough. The deck is session-only: shuffling does not rewrite the saved six-portal workspace. Quest 3 controller navigation, in-session outbound navigation, seated comfort and frame rate still need physical headset verification.
 
 The five destinations are curated links, not embedded apps, a shared WebXR session, cross-origin scene access, or an OS-level app launcher. They do not receive PhiOS runtime authority. The six original portals and their version-1 saved panel arrangement remain unchanged. New in-headset launch behavior needs physical Quest validation before claiming compatibility.
 

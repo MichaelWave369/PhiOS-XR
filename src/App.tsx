@@ -12,9 +12,9 @@ const GITHUB = 'https://github.com/MichaelWave369/PhiOS-XR'
 export function App() {
   const stageRef = useRef<HTMLDivElement>(null)
   const shellRef = useRef<SpatialShell | null>(null)
-  const [selectedId, setSelectedId] = useState('phios')
+  const [selectedId, setSelectedId] = useState('domistika-xr')
   const [layout, setLayout] = useState<LayoutPreset>('arc')
-  const [view, setView] = useState<ViewMode>('portals')
+  const [view, setView] = useState<ViewMode>('worlds')
   const [fieldNote, setFieldNote] = useState('')
   const [clockDisplay, setClockDisplay] = useState<ClockDisplay>({ time: '00:00', running: false })
   const [support, setSupport] = useState<XRAvailability | null>(null)
@@ -134,7 +134,7 @@ export function App() {
   }
 
   return (
-    <div className="app">
+    <div className={view === 'worlds' ? 'app vr-worlds-active' : 'app'}>
       <div className="ambient ambient-one" aria-hidden="true" />
       <div className="ambient ambient-two" aria-hidden="true" />
       <header className="topbar">
@@ -142,7 +142,7 @@ export function App() {
           <span className="identity-mark">Φ</span>
           <span className="identity-copy"><strong>PHIOS <em>XR</em></strong><small>THE SOVEREIGN SPATIAL SHELL</small></span>
         </a>
-        <div className="topbar-mid"><span className="status-pulse" /> EDITION 07 <span className="divider">/</span> EXPERIMENTAL PREVIEW</div>
+        <div className="topbar-mid"><span className="status-pulse" /> NEON HIGHWAY <span className="divider">/</span> VR WORLD DECK</div>
         <a className="source-link" href={GITHUB} target="_blank" rel="noopener noreferrer">SOURCE CODE <span aria-hidden="true">↗</span></a>
       </header>
 
@@ -150,7 +150,7 @@ export function App() {
         <aside className="rail">
           <div className="eyebrow"><span className="rail-index">01 /</span> SPATIAL INDEX</div>
           <h1>One system.<br/><i>Infinite rooms.</i></h1>
-          <p className="intro">An experimental doorway to the Enter the Field universe. Select a portal to explore the connections.</p>
+          <p className="intro">One universe. Five doors. Spin the synthwave deck and enter your next world.</p>
           <div className="rail-caption">ACTIVE MODULES <span>06</span></div>
           <nav className="portal-nav" aria-label="Spatial portals">
             {portals.map((portal) => (
@@ -180,20 +180,20 @@ export function App() {
 
         <section className="stage-section" aria-label="Spatial environment">
           <div className="stage-topline">
-            <span><span className="small-cross">✳</span> Φ FIELDSPACE / SANDBOX 001</span>
+            <span><span className="small-cross">✳</span> Φ FIELDSPACE / NEON HIGHWAY</span>
             <span className="stage-top-right">WEBXR <span className="mini-badge">{sessionMode ? 'SESSION ACTIVE' : 'STANDBY'}</span></span>
           </div>
           <div className="stage" ref={stageRef}>
             {sceneError && <div className="render-error" role="alert">3D PREVIEW UNAVAILABLE<br/><small>{sceneError}. You can still use the portal index.</small></div>}
             <div className="stage-centerpiece" aria-hidden="true"><span>Φ</span></div>
-            <div className="stage-overlay-top" aria-hidden="true">LIVE SPATIAL INTERFACE <span>///</span> READING MODE</div>
+            <div className="stage-overlay-top" aria-hidden="true">OUTRUN / NEON HIGHWAY <span>///</span> WORLD DECK</div>
             <div className="stage-overlay-bottom" aria-hidden="true">
-              <span>◈ MOVABLE PORTALS / LIVE FIELD TOOLS</span>
+              <span>◈ PICK / SHUFFLE / ENTER THE FIELD</span>
               <span>RENDERING / THREE.JS / WEBXR</span>
             </div>
           </div>
           <div className="transport">
-            <div className="transport-text"><strong>ENTER THE FIELD</strong><span>{view === 'portals' ? 'Drag panels to move · Gold corner to resize' : 'Select spatial keys to write · Start or pause the clock'}</span></div>
+            <div className="transport-text"><strong>ENTER THE FIELD</strong><span>{view === 'portals' ? 'Drag panels to move · Gold corner to resize' : view === 'worlds' ? 'Previous · Shuffle · Next · Select a card · Open world' : 'Select spatial keys to write · Start or pause the clock'}</span></div>
             <div className="transport-buttons">
               <button className="mode-button vr" onClick={() => void enter('immersive-vr')} disabled={!support?.vr || !!sessionMode || !!sceneError}>
                 <span>◉</span> ENTER VR
@@ -240,6 +240,14 @@ export function App() {
                 onClick={() => shellRef.current?.setView('tools')}>FIELD TOOLS</button>
             </div>
           </div>
+          {view === 'worlds' && <div className="vr-deck-controls" role="group" aria-label="VR deck controls">
+            <div><strong>THE NEON DECK</strong><small>CHOOSE YOUR NEXT REALITY · {vrWorlds.length} WORLDS</small></div>
+            <div className="vr-deck-actions">
+              <button onClick={() => shellRef.current?.deckAction('previous')} aria-label="Previous VR world">◀ PREV</button>
+              <button className="shuffle-button" onClick={() => shellRef.current?.deckAction('shuffle')} aria-label="Shuffle VR worlds">⤨ SHUFFLE</button>
+              <button onClick={() => shellRef.current?.deckAction('next')} aria-label="Next VR world">NEXT ▶</button>
+            </div>
+          </div>}
           {view === 'worlds' && <div className="vr-world-links" aria-label="Open VR destinations">
             {vrWorlds.map((world) => (
               <a className="vr-world-direct-link" key={world.id}
@@ -247,7 +255,7 @@ export function App() {
                 <strong>{world.name}</strong><small>{world.subtitle}</small><span aria-hidden="true">↗</span>
               </a>
             ))}
-            <p>Inside VR, select a world card and press <strong>OPEN WORLD</strong> using a controller. This leaves the PhiOS XR shell and opens that site in the current browser tab. Each destination has its own VR entry controls.</p>
+            <p>In VR, select a deck card, use PREV / SHUFFLE / NEXT, then trigger <strong>OPEN WORLD</strong>. This leaves PhiOS XR to launch that site's own VR mode. Gaze can select cards but never opens links automatically.</p>
           </div>}
           {view === 'tools' && <div className="field-tools-editor">
             <label className="field-pad-editor">
