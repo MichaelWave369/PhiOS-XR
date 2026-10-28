@@ -408,6 +408,24 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     workspace.add(control)
     return control
   })
+
+  function layoutControlDock(mode: ViewMode) {
+    // Keep the world deck intimate: five controls across the top, not an
+    // eight-button rail floating in the distance. Non-world views retain
+    // their original controls and layout tools.
+    const topActions = ['portals', 'worlds', 'tools', 'recenter', 'exit']
+    actionPanels.forEach((panel, index) => {
+      const item = controls[index]
+      if (mode === 'worlds') {
+        const slot = topActions.indexOf(item.action)
+        panel.visible = slot !== -1
+        if (slot !== -1) panel.position.set((slot - 2) * 0.86, 2.60, -1.95)
+      } else {
+        panel.visible = true
+        panel.position.set(2.28, item.y, -2.55)
+      }
+    })
+  }
   const deckButtons = [
     { action: 'deck-prev', title: '◀ PREV', x: -1.39 },
     { action: 'deck-shuffle', title: 'SHUFFLE', x: 0 },
@@ -436,6 +454,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   cards.forEach((card) => { card.visible = false })
   resizeHandles.forEach((handle) => { handle.visible = false })
   details.visible = false
+  banner.visible = false
+  layoutControlDock('worlds')
   layoutDeck()
   let note = loadPad()
   let clock: ClockState = newClock()
@@ -715,6 +735,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     view = mode
     toolGroup.visible = mode === 'tools'
     details.visible = mode === 'portals'
+    banner.visible = mode !== 'worlds'
+    layoutControlDock(mode)
     cards.forEach((card) => { card.visible = mode === 'portals' })
     resizeHandles.forEach((handle) => { handle.visible = mode === 'portals' })
     layoutDeck()
