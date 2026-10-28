@@ -57,6 +57,16 @@ export const vrWorlds: readonly Portal[] = [
     id: 'spark-vr', name: 'SPARK THE SUBSTRATE', subtitle: 'Immersive two-room lab',
     description: 'Explore the dedicated Spark WebXR prototype, with a desktop fallback and experimental Quest controls.',
     href: 'https://michaelwave369.github.io/SparkTheSubstrate/vr/', kind: 'exploration', number: 'V3'
+  },
+  {
+    id: 'pulse369-vr', name: 'PULSE 369 QUEST LAB', subtitle: 'VR rhythm and tracking test',
+    description: 'Public, standalone controller/rhythm practice and Quest tracking diagnostics. Not the full hosted Pulse 369 fitness studio, which currently requires access.',
+    href: 'https://michaelwave369.github.io/Pulse369/quest.html', kind: 'creative', number: 'V4'
+  },
+  {
+    id: 'lenz-xr', name: 'LENZ XR', subtitle: 'Connected reality gates',
+    description: 'Explore four linked LENZ zones in its stationary, experimental immersive VR laboratory. Full 3D game mechanics are still in development.',
+    href: 'https://michaelwave369.github.io/LENZ/xr.html', kind: 'exploration', number: 'V5'
   }
 ]
 
