@@ -33,5 +33,7 @@ describe('Quest WebXR input rescue', () => {
     expect(safeGazeTarget(undefined, 'reset')).toBeNull()
     expect(safeGazeTarget(undefined, 'recenter')).toBeNull()
     expect(safeGazeTarget(undefined, 'unknown')).toBeNull()
+    expect(safeGazeTarget(undefined, 'gallery')).toBeNull()
+    expect(safeGazeTarget(undefined, 'gallery-home')).toBeNull()
   })
 })
