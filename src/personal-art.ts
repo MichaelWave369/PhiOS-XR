@@ -198,7 +198,9 @@ export async function listPersonalArts(): Promise<PersonalArtInfo[]> {
         cursor.continue()
       }
       request.onerror = () => reject(request.error ?? new Error('Unable to list private gallery'))
-      tx.oncomplete = () => resolve(items.slice(0, PERSONAL_GALLERY_LIMIT))
+      tx.oncomplete = () => resolve(items.sort((a, b) =>
+        a.id === LEGACY_PERSONAL_ID ? -1 : b.id === LEGACY_PERSONAL_ID ? 1 : a.id.localeCompare(b.id),
+      ).slice(0, PERSONAL_GALLERY_LIMIT))
       tx.onerror = () => reject(tx.error ?? new Error('Gallery listing failed'))
     })
   } finally { db.close() }
