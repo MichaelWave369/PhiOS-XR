@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { createCozyRoom, applyCozyRoomMood } from './cozy-room'
 import { HEARTH_MOOD_STYLES, nextHearthMood, readHearthMood, writeHearthMood, type HearthMood } from './hearth-mood'
-import { readPersonalArtMode, readSelectedPersonalId, writeSelectedPersonalId, writePersonalArtMode, type PersonalArtInfo } from './personal-art'
+import { writeSelectedPersonalId, writePersonalArtMode, type PersonalArtInfo } from './personal-art'
 import { HEARTH_ARTWORKS, HEARTH_ART_DETAILS, nextHearthArtwork, readHearthArtwork, setHearthGalleryArt, setHearthGalleryPersonalArt, writeHearthArtwork, type HearthArtwork } from './hearth-gallery'
 import { getPortal, getVrWorld, portals, vrWorlds, type Portal } from './catalog'
 import { createDeck, deckSlots, selectDeck, shuffleDeck, stepDeck } from './vr-deck'
