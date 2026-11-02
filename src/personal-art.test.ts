@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { detectedRasterType, PERSONAL_ART_MAX_INPUT_BYTES, readPersonalArtMode,
-  sanitizePersonalArtName, validatePersonalArtSize, writePersonalArtMode } from './personal-art'
+  sanitizePersonalArtName, validatePersonalArtSize, writePersonalArtMode,
+  validGalleryId, galleryStorageKey, readSelectedPersonalId, writeSelectedPersonalId, PERSONAL_GALLERY_LIMIT } from './personal-art'
 
 describe('private Domistika PNG interchange', () => {
   it('accepts real PNG, JPEG or WebP signatures but never SVG/HTML masquerading as images', () => {
@@ -30,5 +31,24 @@ describe('private Domistika PNG interchange', () => {
     expect(readPersonalArtMode(storage)).toBe('curated')
     expect(readPersonalArtMode({ getItem: () => { throw Error('denied') } })).toBe('curated')
     expect(() => writePersonalArtMode({ setItem: () => { throw Error('denied') } }, 'personal')).not.toThrow()
+  })
+  it('keeps Edition 14 artwork under the original key and permits up to six private pictures', () => {
+    expect(PERSONAL_GALLERY_LIMIT).toBe(6)
+    expect(galleryStorageKey('legacy')).toBe('personal-painting')
+    const id = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
+    expect(galleryStorageKey(id)).toBe('art-' + id)
+    expect(validGalleryId('https://example.com')).toBe(false)
+    expect(() => galleryStorageKey('../other')).toThrow()
+  })
+  it('restores only a valid selected painting id', () => {
+    let saved = ''
+    const store = { getItem: () => saved, setItem: (_: string, value: string) => { saved = value } }
+    expect(readSelectedPersonalId(store)).toBeNull()
+    writeSelectedPersonalId(store, 'legacy')
+    expect(readSelectedPersonalId(store)).toBe('legacy')
+    writeSelectedPersonalId(store, 'http://bad')
+    expect(readSelectedPersonalId(store)).toBe('legacy')
+    saved = 'someone-else'
+    expect(readSelectedPersonalId(store)).toBeNull()
   })
 })
