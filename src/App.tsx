@@ -7,7 +7,7 @@ import { createSpatialShell, type ClockDisplay, type SpatialShell, type ViewMode
 import { MAX_NOTE_CHARS } from './fieldtools'
 import { HEARTH_MOODS, HEARTH_MOOD_STYLES, type HearthMood } from './hearth-mood'
 import { HEARTH_ARTWORKS, HEARTH_ART_DETAILS, type HearthArtwork } from './hearth-gallery'
-import { loadPersonalArt, preparePersonalArt, removePersonalArt, savePersonalArt } from './personal-art'
+import { PERSONAL_GALLERY_LIMIT, addPersonalArt, deletePersonalArtById, listPersonalArts, loadPersonalArtById, preparePersonalArt, readPersonalArtMode, readSelectedPersonalId, type PersonalArtInfo } from './personal-art'
 import { emptyDiagnostics, type XRInputDiagnostics } from './xr-input'
 import { QUEST_CHECKS, QUEST_STORAGE_KEY, buildQuestExport, createQuestReport, decodeQuestReport, questCounts, recordQuestEvent, type QuestStatus } from './questlab'
 
@@ -22,9 +22,9 @@ export function App() {
   const [view, setView] = useState<ViewMode>('worlds')
   const [mood, setMood] = useState<HearthMood>('fireside')
   const [artwork, setArtwork] = useState<HearthArtwork>('golden-spiral')
-  const [personalName, setPersonalName] = useState<string | null>(null)
-  const [personalActive, setPersonalActive] = useState(false)
-  const [personalBusy, setPersonalBusy] = useState(false)
+  const [personalItems, setPersonalItems] = useState<PersonalArtInfo[]>([])
+  const [activePersonalId, setActivePersonalId] = useState<string | null>(null)
+  const [personalBusy, setPersonalBusy] = useState(true)
   const [personalNotice, setPersonalNotice] = useState('')
   const [fieldNote, setFieldNote] = useState('')
   const [clockDisplay, setClockDisplay] = useState<ClockDisplay>({ time: '00:00', running: false })
@@ -111,18 +111,35 @@ export function App() {
         onClock: setClockDisplay,
         onMood: setMood,
         onArtwork: setArtwork,
-        onPersonalArt: (active) => setPersonalActive(active),
+        onPersonalArt: setActivePersonalId,
         onInput: setInputDiagnostics,
       })
       shellRef.current = shell
       const loadRevision = personalRevision.current
-      void loadPersonalArt().then(async (record) => {
-        if (!record || cancelled || personalRevision.current !== loadRevision) return
-        const prepared = await preparePersonalArt(record.image, record.name)
+      void (async () => {
+        const items = await listPersonalArts()
+        const loaded: PersonalArtInfo[] = []
+        for (const item of items) {
+          if (cancelled || personalRevision.current !== loadRevision) return
+          try {
+            const record = await loadPersonalArtById(item.id)
+            if (!record) continue
+            const prepared = await preparePersonalArt(record.image, record.name)
+            if (cancelled || personalRevision.current !== loadRevision) return
+            shell.registerPersonalArtwork(item, prepared.canvas)
+            loaded.push(item)
+          } catch { /* Bad or inaccessible art cannot take down the XR scene */ }
+        }
         if (cancelled || personalRevision.current !== loadRevision) return
-        shell.setPersonalArtwork(prepared.canvas, false)
-        setPersonalName(prepared.name)
-      }).catch(() => { /* local storage may be disabled; standard gallery still works */ })
+        setPersonalItems(loaded)
+        const storage = (() => { try { return window.localStorage } catch { return null } })()
+        if (readPersonalArtMode(storage) === 'personal') {
+          const selected = readSelectedPersonalId(storage)
+          const id = loaded.find((item) => item.id === selected)?.id ?? loaded[0]?.id
+          if (id) shell.showPersonalArtwork(id)
+        }
+      })().catch(() => { /* Browsers may block IndexedDB; art can still work in-session */ })
+        .finally(() => { if (!cancelled && personalRevision.current === loadRevision) setPersonalBusy(false) })
     } catch (err) {
       setSceneError(err instanceof Error ? err.message : 'Unable to create the 3D view.')
     }
@@ -137,41 +154,52 @@ export function App() {
   }, [])
 
   async function importPersonalImage(file: File | undefined) {
-    if (!file) return
-    personalRevision.current++
+    if (!file || personalBusy) return
+    if (personalItems.length >= PERSONAL_GALLERY_LIMIT) {
+      setPersonalNotice('Gallery full: remove a local painting before adding another.')
+      return
+    }
+    const revision = ++personalRevision.current
     setPersonalBusy(true)
     setPersonalNotice('')
     try {
       const prepared = await preparePersonalArt(file, file.name)
-      // Show the image in the current session even if persistent storage is blocked.
-      shellRef.current?.setPersonalArtwork(prepared.canvas, true)
-      setPersonalName(prepared.name)
+      if (personalRevision.current !== revision) return
+      let item: PersonalArtInfo
       try {
-        await savePersonalArt(prepared)
-        setPersonalNotice('Saved locally in this browser. Switch to MY ART in the Hearth gallery.')
-      } catch {
-        setPersonalNotice('Showing for this session only. Browser gallery storage is unavailable.')
+        item = await addPersonalArt(prepared)
+        setPersonalNotice('Painting added to this browser’s private collection.')
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('Gallery full')) throw error
+        // Storage-blocked browsers may keep at most six paintings this session.
+        item = { id: 'session-' + crypto.randomUUID(), name: prepared.name }
+        setPersonalNotice('Storage unavailable: painting is available for this session only.')
       }
+      if (personalRevision.current !== revision) return
+      shellRef.current?.registerPersonalArtwork(item, prepared.canvas)
+      shellRef.current?.showPersonalArtwork(item.id)
+      setPersonalItems((previous) => [...previous, item].slice(0, PERSONAL_GALLERY_LIMIT))
     } catch (error) {
-      setPersonalNotice(error instanceof Error ? error.message : 'Could not load this image.')
+      setPersonalNotice(error instanceof Error ? error.message : 'Unable to import painting.')
     } finally {
-      setPersonalBusy(false)
+      if (personalRevision.current === revision) setPersonalBusy(false)
     }
   }
 
-  async function clearPersonalImage() {
-    if (!personalName || !window.confirm('Remove the locally saved Hearth painting from this browser?')) return
-    personalRevision.current++
+  async function clearPersonalImage(item: PersonalArtInfo) {
+    if (personalBusy || !window.confirm('Remove "' + item.name + '" from this browser’s Hearth gallery?')) return
+    const revision = ++personalRevision.current
     setPersonalBusy(true)
     try {
-      await removePersonalArt()
-      shellRef.current?.setPersonalArtwork(null, false)
-      setPersonalName(null)
-      setPersonalNotice('Local artwork removed. Your original Domistika export is untouched.')
+      if (!item.id.startsWith('session-')) await deletePersonalArtById(item.id)
+      if (personalRevision.current !== revision) return
+      shellRef.current?.removePersonalArtwork(item.id)
+      setPersonalItems((previous) => previous.filter((entry) => entry.id !== item.id))
+      setPersonalNotice('Removed the local copy. Your original Domistika export is untouched.')
     } catch {
-      setPersonalNotice('Unable to remove the saved artwork; check browser storage permissions.')
+      setPersonalNotice('Unable to remove artwork. Browser storage may be restricted.')
     } finally {
-      setPersonalBusy(false)
+      if (personalRevision.current === revision) setPersonalBusy(false)
     }
   }
 
@@ -292,13 +320,13 @@ export function App() {
           <div className="hearth-gallery" role="group" aria-label="Phi Hearth wall gallery">
             <div className="hearth-mood-heading">
               <strong>WALL GALLERY</strong>
-              <small>{HEARTH_ART_DETAILS[artwork].subtitle}. Original artwork generated in this browser, no cloud or uploads.</small>
+              <small>{activePersonalId ? 'Your imported Domistika art is on the wall.' : HEARTH_ART_DETAILS[artwork].subtitle + '. Original local artwork.'} Everything stays in this browser.</small>
             </div>
             <div className="hearth-art-actions">
               {HEARTH_ARTWORKS.map((option) => (
                 <button key={option} type="button"
-                  className={artwork === option && !personalActive ? 'is-active' : ''}
-                  aria-pressed={artwork === option && !personalActive}
+                  className={artwork === option && !activePersonalId ? 'is-active' : ''}
+                  aria-pressed={artwork === option && !activePersonalId}
                   onClick={() => shellRef.current?.setArtwork(option)}>
                   {HEARTH_ART_DETAILS[option].label}
                 </button>
@@ -306,25 +334,37 @@ export function App() {
             </div>
             <div className="personal-gallery-controls">
               <label className="personal-gallery-import">
-                IMPORT DOMISTIKA PNG
+                ADD DOMISTIKA PNG
                 <input type="file" accept="image/png,image/jpeg,image/webp"
-                  disabled={personalBusy} aria-label="Import an exported Domistika painting as PNG, JPEG or WebP"
+                  disabled={personalBusy || personalItems.length >= PERSONAL_GALLERY_LIMIT}
+                  aria-label="Add an exported Domistika painting as PNG, JPEG or WebP"
                   onChange={(event) => {
                     const file = event.currentTarget.files?.[0]
                     event.currentTarget.value = ''
                     void importPersonalImage(file)
                   }} />
               </label>
-              {personalName && <>
-                <button type="button" disabled={personalBusy} className={personalActive ? 'is-active' : ''}
-                  aria-pressed={personalActive} onClick={() => shellRef.current?.showPersonalArtwork()}>
-                  MY ART: {personalName}
-                </button>
-                <button type="button" disabled={personalBusy} className="personal-gallery-remove"
-                  onClick={() => void clearPersonalImage()}>REMOVE LOCAL COPY</button>
-              </>}
-              <span role="status" aria-live="polite">{personalBusy ? 'Preparing artwork locally…' : personalNotice}</span>
-              <small>One personal slot, 8 MB input max. Nothing uploads. This browser's local art is not shared with other devices.</small>
+              <span className="personal-gallery-count">{personalItems.length}/{PERSONAL_GALLERY_LIMIT} LOCAL PAINTINGS</span>
+              {personalItems.length > 0 && (
+                <div className="personal-gallery-list" aria-label="Your imported paintings">
+                  {personalItems.map((item) => (
+                    <div className="personal-gallery-item" key={item.id}>
+                      <button type="button" disabled={personalBusy}
+                        className={activePersonalId === item.id ? 'is-active' : ''}
+                        aria-pressed={activePersonalId === item.id}
+                        title={item.name}
+                        onClick={() => shellRef.current?.showPersonalArtwork(item.id)}>
+                        {item.name}{item.id.startsWith('session-') ? ' (session)' : ''}
+                      </button>
+                      <button type="button" disabled={personalBusy} className="personal-gallery-remove"
+                        aria-label={'Remove ' + item.name + ' from local gallery'}
+                        onClick={() => void clearPersonalImage(item)}>REMOVE</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <span role="status" aria-live="polite">{personalBusy ? 'Preparing local art…' : personalNotice}</span>
+              <small>One picture displayed at a time; up to six stored in this browser. In VR, ART cycles all three built-ins and the imported paintings. No network uploads.</small>
             </div>
           </div>
           <div className="xr-assist-options">

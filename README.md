@@ -75,6 +75,16 @@ The file-picker import displays the art even if IndexedDB is blocked (session on
 
 **Quest acceptance checklist:** export one Domistika painting to PNG and explicitly import it through Quest Browser's normal file picker *outside immersive mode*, then enter VR and confirm MY ART appears in the wall frame. Cycle ART from a controller and gaze; verify frame visibility, no inadvertent OPEN PORTAL activation, MR passthrough, seated/standing comfort, and same-device reloading. Desktop imports do not appear automatically on Quest because browsers and devices do not share storage. CI cannot certify physical Quest behavior.
 
+## Edition 15: Private six-piece Domistika Gallery
+
+The Hearth now holds **up to six personal PNGs** from explicit Domistika XR Export PNG actions, plus three original procedural studies. A two-column browser gallery lets you view or remove individual local paintings; the immersive **ART** panel cycles all three original pieces followed by the imported set. The room still displays one framed picture at a time so Quest rendering doesn't add several full-resolution textures.
+
+**Existing users keep their painting:** the original Edition 14 IndexedDB entry remains untouched under \`personal-painting\` and appears as the first personal item with ID \`legacy\`. Additional imports use separate random UUID keys. Deleting one picture only removes that entry. No silent replacement or eviction when the six-item limit is reached. Data stays in the same browser origin, and session-only fallback remains possible when IndexedDB writes are blocked.
+
+Input validations, 8 MB file and 32 MP decode limits, 1024×768 texture limit, no remote image fetching, no automatic device sync, and explicit-only OPEN PORTAL navigation are retained. **ART** cycles choices using the existing controller-select and safe gaze. Importing/deleting still requires browser UI, never a headset gaze action.
+
+Quest QA: test migration with one preexisting personal picture; import up to six PNGs and confirm a seventh is refused; cycle all nine artworks in VR; delete a currently displayed image; reload and confirm remaining images persist on that device; verify MR decor remains hidden and controller/hand input and comfort. Automated checks do not replace physical headset testing.
+
 ## Quest 3 testing
 
 1. Use the GitHub Pages deployment at `https://michaelwave369.github.io/PhiOS-XR/` **after** the deployment workflow has succeeded and GitHub Pages is configured for **GitHub Actions**.

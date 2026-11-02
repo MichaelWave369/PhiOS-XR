@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { createCozyRoom, applyCozyRoomMood } from './cozy-room'
 import { HEARTH_MOOD_STYLES, nextHearthMood, readHearthMood, writeHearthMood, type HearthMood } from './hearth-mood'
-import { readPersonalArtMode, writePersonalArtMode } from './personal-art'
+import { writeSelectedPersonalId, writePersonalArtMode, type PersonalArtInfo } from './personal-art'
 import { HEARTH_ARTWORKS, HEARTH_ART_DETAILS, nextHearthArtwork, readHearthArtwork, setHearthGalleryArt, setHearthGalleryPersonalArt, writeHearthArtwork, type HearthArtwork } from './hearth-gallery'
 import { getPortal, getVrWorld, portals, vrWorlds, type Portal } from './catalog'
 import { createDeck, deckSlots, selectDeck, shuffleDeck, stepDeck } from './vr-deck'
@@ -27,8 +27,9 @@ export type SpatialShell = {
   deckAction: (action: 'previous' | 'next' | 'shuffle') => void
   setMood: (mood: HearthMood) => void
   setArtwork: (artwork: HearthArtwork) => void
-  setPersonalArtwork: (canvas: HTMLCanvasElement | null, makeActive: boolean) => void
-  showPersonalArtwork: () => void
+  registerPersonalArtwork: (item: PersonalArtInfo, canvas: HTMLCanvasElement) => void
+  removePersonalArtwork: (id: string) => void
+  showPersonalArtwork: (id: string) => void
   dispose: () => void
 }
 
@@ -41,7 +42,7 @@ type ShellCallbacks = {
   onClock: (state: ClockDisplay) => void
   onMood: (mood: HearthMood) => void
   onArtwork: (artwork: HearthArtwork) => void
-  onPersonalArt: (active: boolean, available: boolean) => void
+  onPersonalArt: (activeId: string | null) => void
   onInput?: (snapshot: XRInputDiagnostics) => void
 }
 
@@ -261,8 +262,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   applyCozyRoomMood(decor, mood)
   let artwork: HearthArtwork = readHearthArtwork(moodStorage)
   setHearthGalleryArt(decor, artwork)
-  let personalCanvas: HTMLCanvasElement | null = null
-  let personalActive = false
+  const personalCanvases = new Map<string, HTMLCanvasElement>()
+  let personalActiveId: string | null = null
   scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
 
   const banner = plane(headingTexture(), 3.25, 1.12)
@@ -409,50 +410,58 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   function repaintArtworkLabel() {
     const material = artworkPanel.material as THREE.MeshBasicMaterial
     material.map?.dispose()
-    material.map = actionTexture('ART', personalActive ? 'MY ART' : HEARTH_ART_DETAILS[artwork].label.toUpperCase())
+    material.map = actionTexture('ART', personalActiveId ? 'MY ART' : HEARTH_ART_DETAILS[artwork].label.toUpperCase())
     material.needsUpdate = true
   }
   function setArtwork(next: HearthArtwork) {
-    if (next === artwork && !personalActive) return
+    if (next === artwork && !personalActiveId) return
     artwork = next
-    personalActive = false
+    personalActiveId = null
     setHearthGalleryArt(decor, artwork)
     repaintArtworkLabel()
     writeHearthArtwork(moodStorage, artwork)
     writePersonalArtMode(moodStorage, 'curated')
     callbacks.onArtwork(artwork)
-    callbacks.onPersonalArt(false, Boolean(personalCanvas))
+    callbacks.onPersonalArt(null)
   }
-  function showPersonalArtwork() {
-    if (!personalCanvas) return
-    personalActive = true
-    setHearthGalleryPersonalArt(decor, personalCanvas)
+  function showPersonalArtwork(id: string) {
+    const canvas = personalCanvases.get(id)
+    if (!canvas || personalActiveId === id) return
+    personalActiveId = id
+    setHearthGalleryPersonalArt(decor, canvas)
     repaintArtworkLabel()
     writePersonalArtMode(moodStorage, 'personal')
-    callbacks.onPersonalArt(true, true)
+    writeSelectedPersonalId(moodStorage, id)
+    callbacks.onPersonalArt(id)
   }
-  function setPersonalArtwork(canvas: HTMLCanvasElement | null, makeActive: boolean) {
-    personalCanvas = canvas
-    if (!canvas) {
-      personalActive = false
+  function registerPersonalArtwork(item: PersonalArtInfo, canvas: HTMLCanvasElement) {
+    personalCanvases.set(item.id, canvas)
+    if (personalActiveId === item.id) setHearthGalleryPersonalArt(decor, canvas)
+    // The calling React layer explicitly restores the saved selection after all
+    // stored files finish decoding; newly imported files select themselves.
+  }
+  function removePersonalArtwork(id: string) {
+    personalCanvases.delete(id)
+    if (personalActiveId !== id) return
+    personalActiveId = null
+    const nextId = personalCanvases.keys().next().value as string | undefined
+    if (nextId) showPersonalArtwork(nextId)
+    else {
       setHearthGalleryArt(decor, artwork)
       repaintArtworkLabel()
       writePersonalArtMode(moodStorage, 'curated')
-      callbacks.onPersonalArt(false, false)
-      return
-    }
-    // Fresh imports select My Art; restored images obey the stored viewing mode.
-    if (makeActive || readPersonalArtMode(moodStorage) === 'personal') {
-      showPersonalArtwork()
-    } else {
-      callbacks.onPersonalArt(false, true)
+      callbacks.onPersonalArt(null)
     }
   }
   function cycleArtwork() {
-    if (personalActive) {
-      setArtwork(HEARTH_ARTWORKS[0])
-    } else if (artwork === HEARTH_ARTWORKS[HEARTH_ARTWORKS.length - 1] && personalCanvas) {
-      showPersonalArtwork()
+    const ids = [...personalCanvases.keys()]
+    if (personalActiveId) {
+      const index = ids.indexOf(personalActiveId)
+      const nextId = ids[index + 1]
+      if (nextId) showPersonalArtwork(nextId)
+      else setArtwork(HEARTH_ARTWORKS[0])
+    } else if (artwork === HEARTH_ARTWORKS[HEARTH_ARTWORKS.length - 1] && ids.length > 0) {
+      showPersonalArtwork(ids[0])
     } else {
       setArtwork(nextHearthArtwork(artwork))
     }
@@ -1185,6 +1194,6 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   callbacks.onClock({ time: lastClockText, running: false })
   callbacks.onMood(mood)
   callbacks.onArtwork(artwork)
-  callbacks.onPersonalArt(false, false)
-  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, deckAction, setMood, setArtwork, setPersonalArtwork, showPersonalArtwork, dispose }
+  callbacks.onPersonalArt(null)
+  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, deckAction, setMood, setArtwork, registerPersonalArtwork, removePersonalArtwork, showPersonalArtwork, dispose }
 }

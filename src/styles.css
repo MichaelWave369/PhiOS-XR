@@ -204,3 +204,15 @@
 .personal-gallery-controls>small{flex-basis:100%;color:#c3d3c6;font-size:11px;line-height:1.5}
 .personal-gallery-controls [role=status]{color:#f6d39c;font-size:11px}
 @media(max-width:750px){.personal-gallery-controls>button,.personal-gallery-import{flex:1 1 40%}}
+
+
+/* Edition 15: bounded six-piece, local-only Domistika gallery shelf. */
+.personal-gallery-count{font:700 10px ui-monospace,monospace;color:#e3c58a;letter-spacing:.08em}
+.personal-gallery-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;margin:4px 0 8px}
+.personal-gallery-item{display:flex;min-width:0;gap:6px;border:1px solid #51685f;border-radius:6px;background:#203a35;padding:5px}
+.personal-gallery-item button{min-height:40px;padding:8px 10px;border-radius:4px;background:#29483f;color:#f1ece0;border:1px solid #6a8a7e;font:700 11px system-ui}
+.personal-gallery-item button:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.personal-gallery-item button.is-active{background:#d4b47e;border-color:#fff0cb;color:#172c27}
+.personal-gallery-item button.personal-gallery-remove{background:#392c2b;color:#ecd4ce;border-color:#8a6660}
+.personal-gallery-item button:focus-visible{outline:3px solid #f5d6a7;outline-offset:2px}
+@media(max-width:750px){.personal-gallery-list{grid-template-columns:1fr}}

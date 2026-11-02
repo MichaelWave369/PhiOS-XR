@@ -1,8 +1,20 @@
 /**
  * Private local interchange for Domistika XR Export PNG (also JPEG/WebP).
- * One compressed, bounded painting stored in this origin's IndexedDB.
+ * Up to six compressed, bounded paintings stored in this origin's IndexedDB.
  * No fetch, remote URLs, SVG, scripts, sync, credentials or external storage.
  */
+export const PERSONAL_GALLERY_LIMIT = 6
+export const PERSONAL_SELECTED_ID_KEY = 'phios-xr-hearth-art-selected-v1'
+export const LEGACY_PERSONAL_ID = 'legacy'
+export type PersonalArtInfo = { id: string; name: string }
+export const PERSONAL_ART_KEY_PREFIX = 'art-'
+export function validGalleryId(id: unknown): id is string {
+  return id === LEGACY_PERSONAL_ID || (typeof id === 'string' && /^[a-f0-9-]{36}$/.test(id))
+}
+export function galleryStorageKey(id: string): string {
+  if (!validGalleryId(id)) throw new Error('Invalid gallery item ID')
+  return id === LEGACY_PERSONAL_ID ? 'personal-painting' : PERSONAL_ART_KEY_PREFIX + id
+}
 export const PERSONAL_ART_MAX_INPUT_BYTES = 8 * 1024 * 1024
 export const PERSONAL_ART_MAX_STORED_BYTES = 5 * 1024 * 1024
 export const PERSONAL_ART_MAX_PIXELS = 32 * 1024 * 1024
@@ -15,6 +27,17 @@ const RECORD_KEY = 'personal-painting'
 
 export type PersonalArtMode = 'curated' | 'personal'
 export type PersonalArtRecord = { name: string; image: Blob }
+export function readSelectedPersonalId(storage: Pick<Storage, 'getItem'> | null): string | null {
+  if (!storage) return null
+  try {
+    const stored = storage.getItem(PERSONAL_SELECTED_ID_KEY)
+    return validGalleryId(stored) ? stored : null
+  } catch { return null }
+}
+export function writeSelectedPersonalId(storage: Pick<Storage, 'setItem'> | null, id: string): void {
+  if (!validGalleryId(id)) return
+  try { storage?.setItem(PERSONAL_SELECTED_ID_KEY, id) } catch { /* privacy restricted */ }
+}
 export type PreparedPersonalArt = PersonalArtRecord & { canvas: HTMLCanvasElement }
 
 export function sanitizePersonalArtName(value: string): string {
@@ -142,6 +165,101 @@ export async function removePersonalArt(): Promise<void> {
       transaction.oncomplete = () => resolve()
       transaction.onerror = () => reject(transaction.error ?? new Error('Gallery deletion failed'))
       transaction.onabort = () => reject(transaction.error ?? new Error('Gallery deletion was blocked'))
+    })
+  } finally { db.close() }
+}
+
+
+/** A legacy Edition 14 painting remains readable at its original key. */
+export function validatedArtRecord(value: unknown): PersonalArtRecord | null {
+  if (!value || typeof value !== 'object' || !('name' in value) || !('image' in value)) return null
+  const { name, image } = value as { name: unknown; image: unknown }
+  return typeof name === 'string' && image instanceof Blob && image.type === 'image/png' &&
+    image.size > 0 && image.size <= PERSONAL_ART_MAX_STORED_BYTES
+    ? { name: sanitizePersonalArtName(name), image } : null
+}
+
+/** Read just names/keys for UI; no decoding every image just to build the shelf. */
+export async function listPersonalArts(): Promise<PersonalArtInfo[]> {
+  const db = await openArtDatabase()
+  try {
+    return await new Promise<PersonalArtInfo[]>((resolve, reject) => {
+      const items: PersonalArtInfo[] = []
+      const tx = db.transaction(STORE_NAME, 'readonly')
+      const request = tx.objectStore(STORE_NAME).openCursor()
+      request.onsuccess = () => {
+        const cursor = request.result
+        if (!cursor) return
+        const key = String(cursor.key)
+        const id = key === RECORD_KEY ? LEGACY_PERSONAL_ID :
+          key.startsWith(PERSONAL_ART_KEY_PREFIX) ? key.slice(PERSONAL_ART_KEY_PREFIX.length) : null
+        const record = validatedArtRecord(cursor.value)
+        if (id && validGalleryId(id) && record) items.push({ id, name: record.name })
+        cursor.continue()
+      }
+      request.onerror = () => reject(request.error ?? new Error('Unable to list private gallery'))
+      tx.oncomplete = () => resolve(items.sort((a, b) =>
+        a.id === LEGACY_PERSONAL_ID ? -1 : b.id === LEGACY_PERSONAL_ID ? 1 : a.id.localeCompare(b.id),
+      ).slice(0, PERSONAL_GALLERY_LIMIT))
+      tx.onerror = () => reject(tx.error ?? new Error('Gallery listing failed'))
+    })
+  } finally { db.close() }
+}
+
+/** Fetch exactly one painting when selected; never create a remote asset URL. */
+export async function loadPersonalArtById(id: string): Promise<PersonalArtRecord | null> {
+  const key = galleryStorageKey(id)
+  const db = await openArtDatabase()
+  try {
+    return await new Promise<PersonalArtRecord | null>((resolve, reject) => {
+      const request = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(key)
+      request.onsuccess = () => resolve(validatedArtRecord(request.result))
+      request.onerror = () => reject(request.error ?? new Error('Unable to read private painting'))
+    })
+  } finally { db.close() }
+}
+
+/** Limit is checked in the same write transaction as the new entry. No auto-eviction. */
+export async function addPersonalArt(item: PersonalArtRecord): Promise<PersonalArtInfo> {
+  if (!validatedArtRecord(item)) throw new Error('Invalid prepared artwork')
+  const id = crypto.randomUUID()
+  const db = await openArtDatabase()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      const store = tx.objectStore(STORE_NAME)
+      let tooMany = false
+      const count = store.count()
+      count.onsuccess = () => {
+        if (count.result >= PERSONAL_GALLERY_LIMIT) {
+          tooMany = true
+          tx.abort()
+        } else {
+          store.add({ name: sanitizePersonalArtName(item.name), image: item.image }, galleryStorageKey(id))
+        }
+      }
+      count.onerror = () => tx.abort()
+      tx.oncomplete = () => resolve()
+      tx.onabort = () => reject(new Error(tooMany
+        ? 'Gallery full: remove a painting before importing another.'
+        : 'Local gallery save was blocked.'))
+      tx.onerror = () => reject(tx.error ?? new Error('Unable to save artwork'))
+    })
+    return { id, name: sanitizePersonalArtName(item.name) }
+  } finally { db.close() }
+}
+
+/** Delete only the named local copy, including the original legacy slot on demand. */
+export async function deletePersonalArtById(id: string): Promise<void> {
+  const key = galleryStorageKey(id)
+  const db = await openArtDatabase()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      tx.objectStore(STORE_NAME).delete(key)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error ?? new Error('Could not remove local art'))
+      tx.onabort = () => reject(tx.error ?? new Error('Local deletion was blocked'))
     })
   } finally { db.close() }
 }
