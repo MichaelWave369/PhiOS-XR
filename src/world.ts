@@ -4,6 +4,7 @@ import { HEARTH_MOOD_STYLES, nextHearthMood, readHearthMood, writeHearthMood, ty
 import { writeSelectedPersonalId, writePersonalArtMode, type PersonalArtInfo } from './personal-art'
 import { HEARTH_ARTWORKS, HEARTH_ART_DETAILS, nextHearthArtwork, readHearthArtwork, setHearthGalleryArt, setHearthGalleryPersonalArt, writeHearthArtwork, type HearthArtwork } from './hearth-gallery'
 import { getPortal, getVrWorld, portals, vrWorlds, type Portal } from './catalog'
+import { resolveHearthWallGallery, type HearthWallArt } from './hearth-wall-gallery'
 import { createDeck, deckSlots, selectDeck, shuffleDeck, stepDeck } from './vr-deck'
 import type { ImmersiveMode } from './capabilities'
 import { emptyDiagnostics, nextGaze, safeGazeTarget, type GazeState, type XRInputDiagnostics } from './xr-input'
@@ -407,6 +408,21 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   artworkPanel.visible = false
   workspace.add(artworkPanel)
 
+  /** Changes preview textures only when the gallery selection/inventory changes. */
+  function refreshHearthWallGallery() {
+    const selection = resolveHearthWallGallery(artwork, personalActiveId, [...personalCanvases.keys()])
+    const paintPreview = (slot: 'left' | 'right', item: HearthWallArt) => {
+      if (item.kind === 'personal') {
+        const canvas = personalCanvases.get(item.id)
+        if (canvas) setHearthGalleryPersonalArt(decor, canvas, slot)
+      } else {
+        setHearthGalleryArt(decor, item.artwork, slot)
+      }
+    }
+    paintPreview('left', selection.left)
+    paintPreview('right', selection.right)
+  }
+
   function repaintArtworkLabel() {
     const material = artworkPanel.material as THREE.MeshBasicMaterial
     material.map?.dispose()
@@ -418,6 +434,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     artwork = next
     personalActiveId = null
     setHearthGalleryArt(decor, artwork)
+    refreshHearthWallGallery()
     repaintArtworkLabel()
     writeHearthArtwork(moodStorage, artwork)
     writePersonalArtMode(moodStorage, 'curated')
@@ -429,6 +446,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     if (!canvas || personalActiveId === id) return
     personalActiveId = id
     setHearthGalleryPersonalArt(decor, canvas)
+    refreshHearthWallGallery()
     repaintArtworkLabel()
     writePersonalArtMode(moodStorage, 'personal')
     writeSelectedPersonalId(moodStorage, id)
@@ -437,17 +455,22 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   function registerPersonalArtwork(item: PersonalArtInfo, canvas: HTMLCanvasElement) {
     personalCanvases.set(item.id, canvas)
     if (personalActiveId === item.id) setHearthGalleryPersonalArt(decor, canvas)
+    refreshHearthWallGallery()
     // The calling React layer explicitly restores the saved selection after all
     // stored files finish decoding; newly imported files select themselves.
   }
   function removePersonalArtwork(id: string) {
     personalCanvases.delete(id)
-    if (personalActiveId !== id) return
+    if (personalActiveId !== id) {
+      refreshHearthWallGallery()
+      return
+    }
     personalActiveId = null
     const nextId = personalCanvases.keys().next().value as string | undefined
     if (nextId) showPersonalArtwork(nextId)
     else {
       setHearthGalleryArt(decor, artwork)
+      refreshHearthWallGallery()
       repaintArtworkLabel()
       writePersonalArtMode(moodStorage, 'curated')
       callbacks.onPersonalArt(null)
@@ -1188,6 +1211,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     renderer.domElement.remove()
   }
 
+  // Populate the two low-resolution preview frames after the shell is ready.
+  refreshHearthWallGallery()
   callbacks.onLayout(activePreset)
   callbacks.onView(view)
   callbacks.onNote(note)

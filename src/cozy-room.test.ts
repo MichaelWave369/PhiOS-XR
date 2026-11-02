@@ -7,14 +7,14 @@ describe('Phi Hearth local room', () => {
     const room = new THREE.Group()
     createCozyRoom(room)
     expect(room.name).toBe('The Phi Hearth')
-    for (const name of ['wood-floor', 'sofa-base', 'coffee-table-top', 'rug-center', 'window-sky', 'fireplace-opening', 'reading-lamp-shade', 'plant-pot', 'hearth-gallery-frame', 'hearth-gallery-painting']) {
+    for (const name of ['wood-floor', 'sofa-base', 'coffee-table-top', 'rug-center', 'window-sky', 'fireplace-opening', 'reading-lamp-shade', 'plant-pot', 'hearth-gallery-frame', 'hearth-gallery-painting', 'hearth-gallery-left-frame', 'hearth-gallery-painting-left', 'hearth-gallery-painting-right']) {
       expect(room.getObjectByName(name)).toBeDefined()
     }
     const meshes: THREE.Mesh[] = []
     room.traverse((object) => {
       if (object instanceof THREE.Mesh) meshes.push(object)
     })
-    expect(meshes.length).toBeLessThan(120)
+    expect(meshes.length).toBeLessThan(125)
     expect(room.children.some((object) => object instanceof THREE.Light)).toBe(true)
     for (const mesh of meshes) {
       expect(mesh.geometry).toBeDefined()

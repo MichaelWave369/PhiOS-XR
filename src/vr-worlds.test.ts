@@ -58,6 +58,7 @@ describe('immersive worlds and explicitly marked XR companions', () => {
     expect(source).toContain("card.visible = view === 'worlds' && !!position")
     expect(source).toContain("side === 0 ? -1.97 : -2.36")
     expect(source).toContain('createCozyRoom(decor)')
+    expect(source).toContain('refreshHearthWallGallery()')
     expect(source).toContain("const topActions = ['portals', 'worlds', 'tools', 'recenter', 'exit']")
     expect(source).toContain("layoutControlDock('worlds')")
     expect(source).toContain("banner.visible = mode !== 'worlds'")
