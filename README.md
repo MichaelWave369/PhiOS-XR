@@ -85,6 +85,16 @@ Input validations, 8 MB file and 32 MP decode limits, 1024×768 texture limit, n
 
 Quest QA: test migration with one preexisting personal picture; import up to six PNGs and confirm a seventh is refused; cycle all nine artworks in VR; delete a currently displayed image; reload and confirm remaining images persist on that device; verify MR decor remains hidden and controller/hand input and comfort. Automated checks do not replace physical headset testing.
 
+## Edition 16: Three-frame living-room gallery wall
+
+The Hearth now physically displays **three framed artworks at the same time**. The main painting over the sofa remains the currently selected Domistika or procedural piece. The former mantel picture over the fireplace becomes a right-hand preview, while a new left-wall picture joins the reading corner without covering the existing window. It is **not a new room, nor free locomotion yet**. The three artworks are visible by turning toward their frames in the existing living room.
+
+The two peripheral preview frames show other distinct local paintings from the saved six-piece collection when available, falling back to the remaining original geometric studies. ART controller select and gaze dwell remain selection-only, updating the three-frame arrangement with no external navigation. No extra fetches or auto-play; gallery texture changes run on selection/import/removal only, never once per animation frame. Peripherals downsample personal paintings to 512×384. The main selected frame still retains the 1024×768 prepared image.
+
+Existing local image records, source Domistika PNGs, preference formats, and the Quest input/navigation scheme stay unchanged. In MR passthrough the entire decorative room including all three frames remains hidden.
+
+**Hardware gate:** On Quest 3, check paintings are visible and correctly face the viewer from a comfortable seated/standing position; switch among originals and six personal artworks, ensure per-frame previews change without stutter, inspect the left-wall picture's orientation, MR transparency and comfort. Only an on-headset test can qualify layout and performance.
+
 ## Quest 3 testing
 
 1. Use the GitHub Pages deployment at `https://michaelwave369.github.io/PhiOS-XR/` **after** the deployment workflow has succeeded and GitHub Pages is configured for **GitHub Actions**.

@@ -107,6 +107,14 @@ export function createCozyRoom(group: THREE.Group): void {
   }
   box('mantel-picture', 0.92, 0.62, 0.08, 3.32, 2.43, -6.98, wood)
   box('mantel-picture-art', 0.77, 0.47, 0.09, 3.32, 2.43, -6.925, fabricDark)
+  // Existing mantel frame becomes the small right-hand gallery preview.
+  const rightPainting = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.75, 0.44),
+    new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide }),
+  )
+  rightPainting.name = 'hearth-gallery-painting-right'
+  rightPainting.position.set(3.32, 2.43, -6.865)
+  group.add(rightPainting)
 
   // A real framed art surface above the sofa. The artwork is drawn locally
   // when the browser shell starts, rather than downloaded or animated.
@@ -119,6 +127,19 @@ export function createCozyRoom(group: THREE.Group): void {
   painting.name = 'hearth-gallery-painting'
   painting.position.set(0.60, 2.60, -6.83)
   group.add(painting)
+
+  // A third picture faces inward from the left wall near the reading nook.
+  // This avoids covering the existing moonlit window on the back wall.
+  box('hearth-gallery-left-frame', 0.10, 1.21, 1.55, -5.04, 2.43, -3.45, woodLight)
+  box('hearth-gallery-left-mat', 0.035, 1.05, 1.37, -4.967, 2.43, -3.45, trim)
+  const leftPainting = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.23, 0.92),
+    new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide }),
+  )
+  leftPainting.name = 'hearth-gallery-painting-left'
+  leftPainting.position.set(-4.94, 2.43, -3.45)
+  leftPainting.rotation.y = Math.PI / 2
+  group.add(leftPainting)
 
   // Reading corner, shelves, and plant provide a lived-in silhouette.
   box('bookcase-back', 1.16, 2.62, 0.35, -4.38, 1.36, -5.38, wood)

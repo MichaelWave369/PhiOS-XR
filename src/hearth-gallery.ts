@@ -155,8 +155,11 @@ export function makeHearthArtTexture(art: HearthArtwork): THREE.CanvasTexture {
 }
 
 /** Swaps only the painting's texture; does not rebuild the room or change input. */
-export function setHearthGalleryTexture(room: THREE.Group, next: THREE.Texture): void {
-  const painting = room.getObjectByName('hearth-gallery-painting')
+export type HearthGalleryFrame = 'center' | 'left' | 'right'
+
+export function setHearthGalleryTexture(room: THREE.Group, next: THREE.Texture, frame: HearthGalleryFrame = 'center'): void {
+  const paintingName = frame === 'center' ? 'hearth-gallery-painting' : 'hearth-gallery-painting-' + frame
+  const painting = room.getObjectByName(paintingName)
   if (!(painting instanceof THREE.Mesh) || !(painting.material instanceof THREE.MeshBasicMaterial)) {
     next.dispose()
     return
@@ -166,12 +169,25 @@ export function setHearthGalleryTexture(room: THREE.Group, next: THREE.Texture):
   painting.material.needsUpdate = true
   previous?.dispose()
 }
-export function setHearthGalleryPersonalArt(room: THREE.Group, canvas: HTMLCanvasElement): void {
-  const texture = new THREE.CanvasTexture(canvas)
+export function setHearthGalleryPersonalArt(
+  room: THREE.Group, canvas: HTMLCanvasElement, frame: HearthGalleryFrame = 'center',
+): void {
+  // One full-res focus frame; peripheral previews use a quarter-size GPU texture.
+  let source = canvas
+  if (frame !== 'center') {
+    const small = document.createElement('canvas')
+    small.width = 512
+    small.height = 384
+    const ctx = small.getContext('2d')
+    if (!ctx) return
+    ctx.drawImage(canvas, 0, 0, small.width, small.height)
+    source = small
+  }
+  const texture = new THREE.CanvasTexture(source)
   texture.colorSpace = THREE.SRGBColorSpace
-  texture.anisotropy = 4
-  setHearthGalleryTexture(room, texture)
+  texture.anisotropy = frame === 'center' ? 4 : 2
+  setHearthGalleryTexture(room, texture, frame)
 }
-export function setHearthGalleryArt(room: THREE.Group, art: HearthArtwork): void {
-  setHearthGalleryTexture(room, makeHearthArtTexture(art))
+export function setHearthGalleryArt(room: THREE.Group, art: HearthArtwork, frame: HearthGalleryFrame = 'center'): void {
+  setHearthGalleryTexture(room, makeHearthArtTexture(art), frame)
 }
