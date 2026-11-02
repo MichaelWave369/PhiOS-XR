@@ -24,7 +24,7 @@ export function App() {
   const [artwork, setArtwork] = useState<HearthArtwork>('golden-spiral')
   const [personalItems, setPersonalItems] = useState<PersonalArtInfo[]>([])
   const [activePersonalId, setActivePersonalId] = useState<string | null>(null)
-  const [personalBusy, setPersonalBusy] = useState(false)
+  const [personalBusy, setPersonalBusy] = useState(true)
   const [personalNotice, setPersonalNotice] = useState('')
   const [fieldNote, setFieldNote] = useState('')
   const [clockDisplay, setClockDisplay] = useState<ClockDisplay>({ time: '00:00', running: false })
@@ -139,6 +139,7 @@ export function App() {
           if (id) shell.showPersonalArtwork(id)
         }
       })().catch(() => { /* Browsers may block IndexedDB; art can still work in-session */ })
+        .finally(() => { if (!cancelled && personalRevision.current === loadRevision) setPersonalBusy(false) })
     } catch (err) {
       setSceneError(err instanceof Error ? err.message : 'Unable to create the 3D view.')
     }
