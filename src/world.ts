@@ -1,8 +1,10 @@
 import * as THREE from 'three'
 import { createCozyRoom, applyCozyRoomMood } from './cozy-room'
+import { createGalleryRoom, GALLERY_EXHIBIT_COUNT } from './gallery-room'
+import { resolveGalleryRoomExhibits } from './gallery-room-model'
 import { HEARTH_MOOD_STYLES, nextHearthMood, readHearthMood, writeHearthMood, type HearthMood } from './hearth-mood'
 import { writeSelectedPersonalId, writePersonalArtMode, type PersonalArtInfo } from './personal-art'
-import { HEARTH_ARTWORKS, HEARTH_ART_DETAILS, nextHearthArtwork, readHearthArtwork, setHearthGalleryArt, setHearthGalleryPersonalArt, writeHearthArtwork, type HearthArtwork } from './hearth-gallery'
+import { HEARTH_ARTWORKS, HEARTH_ART_DETAILS, nextHearthArtwork, readHearthArtwork, setHearthGalleryArt, setHearthGalleryPersonalArt, makeHearthArtTexture, writeHearthArtwork, type HearthArtwork } from './hearth-gallery'
 import { getPortal, getVrWorld, portals, vrWorlds, type Portal } from './catalog'
 import { resolveHearthWallGallery, type HearthWallArt } from './hearth-wall-gallery'
 import { createDeck, deckSlots, selectDeck, shuffleDeck, stepDeck } from './vr-deck'
@@ -11,7 +13,7 @@ import { emptyDiagnostics, nextGaze, safeGazeTarget, type GazeState, type XRInpu
 import { calculateWorkspaceAnchor } from './layout'
 import { clearWorkspace, clampPanelSize, clampPosition, loadWorkspace, presetPanels, saveWorkspace, type LayoutPreset } from './workspace'
 import { applyPadKey, elapsedClock, formatClock, loadPad, newClock, pauseClock, sanitizeNote, savePad, startClock, type ClockState } from './fieldtools'
-export type ViewMode = 'portals' | 'tools' | 'worlds'
+export type ViewMode = 'portals' | 'tools' | 'worlds' | 'gallery'
 export type ClockDisplay = { time: string; running: boolean }
 
 export type SpatialShell = {
@@ -257,6 +259,11 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   const decor = new THREE.Group()
   workspace.add(decor)
   createCozyRoom(decor)
+  const galleryDecor = new THREE.Group()
+  workspace.add(galleryDecor)
+  createGalleryRoom(galleryDecor)
+  galleryDecor.visible = false
+  let immersiveArActive = false
   // Access to localStorage itself can throw in privacy-restricted browsers.
   const moodStorage = (() => { try { return window.localStorage } catch { return null } })()
   let mood: HearthMood = readHearthMood(moodStorage)
@@ -365,7 +372,9 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     const topActions = ['portals', 'worlds', 'tools', 'recenter', 'exit']
     actionPanels.forEach((panel, index) => {
       const item = controls[index]
-      if (mode === 'worlds') {
+      if (mode === 'gallery') {
+        panel.visible = false
+      } else if (mode === 'worlds') {
         const slot = topActions.indexOf(item.action)
         panel.visible = slot !== -1
         if (slot !== -1) panel.position.set((slot - 2) * 0.86, 2.60, -1.95)
@@ -395,6 +404,29 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   openWorldPanel.visible = false
   workspace.add(openWorldPanel)
 
+  // An explicit room switch, not a movement animation. Switching is deliberately
+  // controller/pointer-only so gaze cannot unexpectedly replace the environment.
+  const galleryEntry = plane(actionTexture('GALLERY', 'VIEW YOUR ART'), 1.06, 0.43)
+  galleryEntry.position.set(-2.75, 1.24, -2.12)
+  galleryEntry.userData.action = 'gallery'
+  galleryEntry.visible = false
+  workspace.add(galleryEntry)
+
+  const galleryHome = plane(actionTexture('HEARTH', 'RETURN HOME'), 1.20, 0.42)
+  galleryHome.position.set(-0.84, 1.12, -1.63)
+  galleryHome.userData.action = 'gallery-home'
+  galleryHome.visible = false
+  workspace.add(galleryHome)
+  const galleryNext = plane(actionTexture('NEXT ART', 'ROTATE EXHIBITS'), 1.20, 0.42)
+  galleryNext.position.set(0.84, 1.12, -1.63)
+  galleryNext.userData.action = 'art'
+  galleryNext.visible = false
+  workspace.add(galleryNext)
+  const galleryTitle = plane(actionTexture('THE Φ GALLERY', 'LOCAL CREATIONS'), 2.4, 0.48)
+  galleryTitle.position.set(0, 3.22, -5.08)
+  galleryTitle.visible = false
+  workspace.add(galleryTitle)
+
   // One easy-to-reach, safe-to-gaze mood control, separate from external links.
   const moodPanel = plane(actionTexture('MOOD', HEARTH_MOOD_STYLES[mood].label.toUpperCase()), 1.05, 0.42)
   moodPanel.position.set(-1.55, 0.47, -1.97)
@@ -407,6 +439,42 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   artworkPanel.userData.action = 'art'
   artworkPanel.visible = false
   workspace.add(artworkPanel)
+
+  /** Six lightweight exhibit textures. Only regenerate on actual gallery changes. */
+  function refreshGalleryExhibits() {
+    if (view !== 'gallery') return
+    const exhibits = resolveGalleryRoomExhibits(artwork, personalActiveId, [...personalCanvases.keys()])
+    for (let i = 0; i < GALLERY_EXHIBIT_COUNT; i++) {
+      const frame = galleryDecor.getObjectByName('gallery-exhibit-painting-' + i)
+      if (!(frame instanceof THREE.Mesh) || !(frame.material instanceof THREE.MeshBasicMaterial)) continue
+      const item = exhibits[i]
+      const texture = item.kind === 'personal' && personalCanvases.has(item.id)
+        ? (() => {
+          const small = document.createElement('canvas')
+          small.width = 512
+          small.height = 384
+          const ctx = small.getContext('2d')
+          if (!ctx) return null
+          ctx.drawImage(personalCanvases.get(item.id)!, 0, 0, 512, 384)
+          const tex = new THREE.CanvasTexture(small)
+          tex.colorSpace = THREE.SRGBColorSpace
+          tex.anisotropy = 2
+          return tex
+        })()
+        : makeGalleryExhibitFallback(item)
+      if (!texture) continue
+      const old = frame.material.map
+      frame.material.map = texture
+      frame.material.needsUpdate = true
+      old?.dispose()
+    }
+  }
+
+  function makeGalleryExhibitFallback(item: HearthWallArt): THREE.Texture {
+    // resolveGalleryRoomExhibits only requests curated art when the personal
+    // painting isn't available; no arbitrary URLs or cross-origin file loads.
+    return makeHearthArtTexture(item.kind === 'curated' ? item.artwork : artwork)
+  }
 
   /** Changes preview textures only when the gallery selection/inventory changes. */
   function refreshHearthWallGallery() {
@@ -435,6 +503,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     personalActiveId = null
     setHearthGalleryArt(decor, artwork)
     refreshHearthWallGallery()
+    refreshGalleryExhibits()
     repaintArtworkLabel()
     writeHearthArtwork(moodStorage, artwork)
     writePersonalArtMode(moodStorage, 'curated')
@@ -447,6 +516,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     personalActiveId = id
     setHearthGalleryPersonalArt(decor, canvas)
     refreshHearthWallGallery()
+    refreshGalleryExhibits()
     repaintArtworkLabel()
     writePersonalArtMode(moodStorage, 'personal')
     writeSelectedPersonalId(moodStorage, id)
@@ -456,6 +526,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     personalCanvases.set(item.id, canvas)
     if (personalActiveId === item.id) setHearthGalleryPersonalArt(decor, canvas)
     refreshHearthWallGallery()
+    refreshGalleryExhibits()
     // The calling React layer explicitly restores the saved selection after all
     // stored files finish decoding; newly imported files select themselves.
   }
@@ -463,6 +534,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     personalCanvases.delete(id)
     if (personalActiveId !== id) {
       refreshHearthWallGallery()
+      refreshGalleryExhibits()
       return
     }
     personalActiveId = null
@@ -471,6 +543,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     else {
       setHearthGalleryArt(decor, artwork)
       refreshHearthWallGallery()
+      refreshGalleryExhibits()
       repaintArtworkLabel()
       writePersonalArtMode(moodStorage, 'curated')
       callbacks.onPersonalArt(null)
@@ -626,7 +699,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   addKey('CLEAR', 0.35, 0.64, 0.46, 'pad')
   addKey('TOGGLE', 1.07, 1.28, 0.48, 'clock')
   addKey('RESET', 1.64, 1.28, 0.48, 'clock')
-  const targets: THREE.Mesh[] = [...cards, ...worldCards, ...deckButtons, openWorldPanel, moodPanel, artworkPanel, ...resizeHandles, ...actionPanels, ...keyMeshes]
+  const targets: THREE.Mesh[] = [...cards, ...worldCards, ...deckButtons, openWorldPanel, moodPanel, artworkPanel, galleryEntry, galleryHome, galleryNext, ...resizeHandles, ...actionPanels, ...keyMeshes]
   const gazeTargets: THREE.Mesh[] = [...cards, ...worldCards, ...actionPanels, moodPanel, artworkPanel]
   const gazeReticle = new THREE.Mesh(
     new THREE.RingGeometry(0.027, 0.049, 28),
@@ -792,7 +865,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     view = mode
     toolGroup.visible = mode === 'tools'
     details.visible = mode === 'portals'
-    banner.visible = mode !== 'worlds'
+    banner.visible = mode === 'portals' || mode === 'tools'
     layoutControlDock(mode)
     cards.forEach((card) => { card.visible = mode === 'portals' })
     resizeHandles.forEach((handle) => { handle.visible = mode === 'portals' })
@@ -801,6 +874,13 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     openWorldPanel.visible = mode === 'worlds'
     moodPanel.visible = mode === 'worlds'
     artworkPanel.visible = mode === 'worlds'
+    galleryEntry.visible = mode === 'worlds'
+    galleryHome.visible = mode === 'gallery'
+    galleryNext.visible = mode === 'gallery'
+    galleryTitle.visible = mode === 'gallery' && !immersiveArActive
+    decor.visible = mode !== 'gallery' && !immersiveArActive
+    galleryDecor.visible = mode === 'gallery' && !immersiveArActive
+    if (mode === 'gallery') refreshGalleryExhibits()
     if (mode === 'worlds' && !getVrWorld(selected)) activate(deck.active)
     if (mode === 'portals' && !portals.some((portal) => portal.id === selected)) activate(portals[0].id)
     callbacks.onView(view)
@@ -890,6 +970,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     else if (action === 'worlds') setView('worlds')
     else if (action === 'mood') setMood(nextHearthMood(mood))
     else if (action === 'art') cycleArtwork()
+    else if (action === 'gallery' && view === 'worlds') setView('gallery')
+    else if (action === 'gallery-home' && view === 'gallery') setView('worlds')
     else if (action === 'deck-prev' && view === 'worlds') deckAction('previous')
     else if (action === 'deck-next' && view === 'worlds') deckAction('next')
     else if (action === 'deck-shuffle' && view === 'worlds') deckAction('shuffle')
@@ -1130,6 +1212,9 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     openWorldPanel.scale.setScalar(hovered.has(openWorldPanel) ? 1.06 : 1)
     moodPanel.scale.setScalar(hovered.has(moodPanel) ? 1.06 : 1)
     artworkPanel.scale.setScalar(hovered.has(artworkPanel) ? 1.06 : 1)
+    galleryEntry.scale.setScalar(hovered.has(galleryEntry) ? 1.07 : 1)
+    galleryHome.scale.setScalar(hovered.has(galleryHome) ? 1.07 : 1)
+    galleryNext.scale.setScalar(hovered.has(galleryNext) ? 1.07 : 1)
     renderer.render(scene, camera)
     // Render has updated the XR camera pose; use it for head-gaze raycasts.
     updateGaze(time)
@@ -1164,7 +1249,10 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       gazeProgress = 0
       noteInput('SESSION ENDED')
       scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
-      decor.visible = true
+      immersiveArActive = false
+      decor.visible = view !== 'gallery'
+      galleryDecor.visible = view === 'gallery'
+      galleryTitle.visible = view === 'gallery'
       workspace.position.set(0, 0, 0)
       workspace.rotation.set(0, 0, 0)
       xrDrags.clear()
@@ -1174,7 +1262,10 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     try {
       // WebXR AR requires a transparent scene background to expose passthrough.
       scene.background = mode === 'immersive-ar' ? null : new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
-      decor.visible = mode !== 'immersive-ar'
+      immersiveArActive = mode === 'immersive-ar'
+      decor.visible = view !== 'gallery' && !immersiveArActive
+      galleryDecor.visible = view === 'gallery' && !immersiveArActive
+      galleryTitle.visible = view === 'gallery' && !immersiveArActive
       await renderer.xr.setSession(session)
       input = { ...emptyDiagnostics(gazeEnabled), sourceCount: session.inputSources.length }
       noteInput('SESSION OPENED')
@@ -1183,7 +1274,10 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     } catch (error) {
       await session.end().catch(() => {})
       scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
-      decor.visible = true
+      immersiveArActive = false
+      decor.visible = view !== 'gallery'
+      galleryDecor.visible = view === 'gallery'
+      galleryTitle.visible = view === 'gallery'
       throw error
     }
   }

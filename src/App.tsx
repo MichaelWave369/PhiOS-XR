@@ -269,20 +269,20 @@ export function App() {
 
         <section className="stage-section" aria-label="Spatial environment">
           <div className="stage-topline">
-            <span><span className="small-cross">✳</span> Φ FIELDSPACE / THE Φ HEARTH</span>
+            <span><span className="small-cross">✳</span> Φ FIELDSPACE / {view === 'gallery' ? 'THE Φ GALLERY' : 'THE Φ HEARTH'}</span>
             <span className="stage-top-right">WEBXR <span className="mini-badge">{sessionMode ? 'SESSION ACTIVE' : 'STANDBY'}</span></span>
           </div>
           <div className="stage" ref={stageRef}>
             {sceneError && <div className="render-error" role="alert">3D PREVIEW UNAVAILABLE<br/><small>{sceneError}. You can still use the portal index.</small></div>}
             <div className="stage-centerpiece" aria-hidden="true"><span>Φ</span></div>
-            <div className="stage-overlay-top" aria-hidden="true">THE Φ HEARTH / LIVING ROOM <span>///</span> WORLD DECK</div>
+            <div className="stage-overlay-top" aria-hidden="true">{view === 'gallery' ? 'Φ GALLERY / YOUR COLLECTION' : 'THE Φ HEARTH / LIVING ROOM'} <span>///</span> {view === 'gallery' ? 'BACK TO HEARTH' : 'WORLD DECK'}</div>
             <div className="stage-overlay-bottom" aria-hidden="true">
               <span>◈ PICK / SHUFFLE / ENTER THE FIELD</span>
               <span>RENDERING / THREE.JS / WEBXR</span>
             </div>
           </div>
           <div className="transport">
-            <div className="transport-text"><strong>ENTER THE FIELD</strong><span>{view === 'portals' ? 'Drag panels to move · Gold corner to resize' : view === 'worlds' ? 'Previous · Shuffle · Next · Select a card · Open world' : 'Select spatial keys to write · Start or pause the clock'}</span></div>
+            <div className="transport-text"><strong>ENTER THE FIELD</strong><span>{view === 'portals' ? 'Drag panels to move · Gold corner to resize' : view === 'worlds' ? 'Previous · Shuffle · Next · Enter the gallery or open a world' : view === 'gallery' ? 'Six framed works · Turn to look around · Return to Hearth to launch a world' : 'Select spatial keys to write · Start or pause the clock'}</span></div>
             <div className="transport-buttons">
               <button className="mode-button vr" onClick={() => void enter('immersive-vr')} disabled={!support?.vr || !!sessionMode || !!sceneError}>
                 <span>◉</span> ENTER VR
@@ -299,6 +299,15 @@ export function App() {
               }} disabled={!sessionMode}>
                 EXIT XR
               </button>
+            </div>
+          </div>
+          <div className="hearth-room-switch" role="group" aria-label="Choose a virtual room">
+            <div><strong>YOUR XR ROOMS</strong><small>Stationary transition · no forced locomotion</small></div>
+            <div className="hearth-room-switch-actions">
+              <button type="button" className={view === 'worlds' ? 'is-active' : ''}
+                aria-pressed={view === 'worlds'} onClick={() => shellRef.current?.setView('worlds')}>COZY HEARTH</button>
+              <button type="button" className={view === 'gallery' ? 'is-active' : ''}
+                aria-pressed={view === 'gallery'} onClick={() => shellRef.current?.setView('gallery')}>ART GALLERY</button>
             </div>
           </div>
           <div className="hearth-moods" role="group" aria-label="Phi Hearth ambience">
@@ -382,7 +391,7 @@ export function App() {
             </div>
           </div>
           <div className="field-view-switch" role="group" aria-label="Spatial workspace mode">
-            <div><strong>SPATIAL SURFACES</strong><small>PORTALS / VR WORLDS / FIELD TOOLS</small></div>
+            <div><strong>SPATIAL SURFACES</strong><small>PORTALS / VR WORLDS / GALLERY / FIELD TOOLS</small></div>
             <div className="layout-actions">
               <button className={view === 'portals' ? 'layout-action is-active' : 'layout-action'}
                 aria-pressed={view === 'portals'}
@@ -390,6 +399,9 @@ export function App() {
               <button className={view === 'worlds' ? 'layout-action is-active' : 'layout-action'}
                 aria-pressed={view === 'worlds'}
                 onClick={() => shellRef.current?.setView('worlds')}>VR WORLDS</button>
+              <button className={view === 'gallery' ? 'layout-action is-active' : 'layout-action'}
+                aria-pressed={view === 'gallery'}
+                onClick={() => shellRef.current?.setView('gallery')}>GALLERY</button>
               <button className={view === 'tools' ? 'layout-action is-active' : 'layout-action'}
                 aria-pressed={view === 'tools'}
                 onClick={() => shellRef.current?.setView('tools')}>FIELD TOOLS</button>

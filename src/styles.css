@@ -216,3 +216,14 @@
 .personal-gallery-item button.personal-gallery-remove{background:#392c2b;color:#ecd4ce;border-color:#8a6660}
 .personal-gallery-item button:focus-visible{outline:3px solid #f5d6a7;outline-offset:2px}
 @media(max-width:750px){.personal-gallery-list{grid-template-columns:1fr}}
+
+
+/* Edition 17: stationary room switching, no visual motion dependency. */
+.hearth-room-switch{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:13px 17px;background:#223331;border:1px solid #5d705f;border-bottom:0}
+.hearth-room-switch strong{display:block;color:#eddfc6;font:750 12px system-ui}
+.hearth-room-switch small{display:block;color:#b7cfc6;font:11px system-ui;margin-top:5px}
+.hearth-room-switch-actions{display:flex;gap:8px;flex-wrap:wrap}
+.hearth-room-switch-actions button{min-height:43px;padding:9px 13px;border:1px solid #778f82;border-radius:6px;background:#29443e;color:#eae6dc;font:750 11px system-ui}
+.hearth-room-switch-actions button.is-active{background:#dcbb86;color:#172c26;border-color:#fff0ca}
+.hearth-room-switch-actions button:focus-visible{outline:3px solid #f6d7a1;outline-offset:2px}
+@media(max-width:750px){.hearth-room-switch-actions{width:100%}.hearth-room-switch-actions button{flex:1}}

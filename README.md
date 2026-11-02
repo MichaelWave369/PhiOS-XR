@@ -95,6 +95,16 @@ Existing local image records, source Domistika PNGs, preference formats, and the
 
 **Hardware gate:** On Quest 3, check paintings are visible and correctly face the viewer from a comfortable seated/standing position; switch among originals and six personal artworks, ensure per-frame previews change without stutter, inspect the left-wall picture's orientation, MR transparency and comfort. Only an on-headset test can qualify layout and performance.
 
+## Edition 17: Φ Gallery Room (stationary comfort-first room switch)
+
+**The Φ Hearth now has two connected virtual interiors.** The cozy Hearth retains its original sofa, fireplace, three framed works, world shelf, tools, and system portals. From the headset shelf use the new **GALLERY** panel, or the accessible **ART GALLERY** browser button, to enter a dedicated small exhibition room with six framed paintings. Use the in-room **HEARTH** return panel to go home, or **NEXT ART** to cycle the selected painting. Both rooms reuse the same WebXR session, camera, tracked position and controls. The room **swaps environments around your stationary headset** at an explicit click/trigger, with **no continuous artificial locomotion, camera animation, involuntary turning, or teleporting of the tracked player**. This is a room transition, not real physical room-scale navigation.
+
+The room draws six local exhibit frames: two on the rear wall and two facing inward on each side wall. It shows the currently selected personal painting first when available, then the other saved Domistika pieces, and fills any empty positions from our three locally generated studies. Local imported canvases appear as 512×384 textures in the gallery to limit GPU use. Exhibit textures update only on entering the gallery or changing the saved collection/selection, and old textures are disposed. Files never upload; Edition 14–16 local IndexedDB and preference formats remain unchanged. Gallery frames are **decorative only** and cannot open links, edit paintings, or request privileges.
+
+**Safety:** The environment switch requires explicit controller select or pointer click, *not* gaze-dwell, so the room cannot unexpectedly change when you look at a control. Safe ART gaze cycling remains. Existing OPEN PORTAL navigation is only available in the Hearth and still requires explicit activation. Mixed reality hides both virtual rooms and leaves passthrough transparent; returning to VR/desktop shows the chosen environment again.
+
+**Quest acceptance:** In Quest Browser enter VR, use GALLERY, turn your head (or physically turn safely) to inspect all six pictures, click NEXT ART, return with HEARTH, and confirm controls remain selectable, seated/standing head motion is tracked, no nausea/unwanted movement, stable frame rate, and MR passthrough remains visible. Confirm desktop view, stored personal PNGs and portal launches remain intact. CI cannot certify headset comfort or FPS.
+
 ## Quest 3 testing
 
 1. Use the GitHub Pages deployment at `https://michaelwave369.github.io/PhiOS-XR/` **after** the deployment workflow has succeeded and GitHub Pages is configured for **GitHub Actions**.
