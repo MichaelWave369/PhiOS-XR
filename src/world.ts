@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { createCozyRoom, applyCozyRoomMood } from './cozy-room'
 import { HEARTH_MOOD_STYLES, nextHearthMood, readHearthMood, writeHearthMood, type HearthMood } from './hearth-mood'
+import { HEARTH_ART_DETAILS, nextHearthArtwork, readHearthArtwork, setHearthGalleryArt, writeHearthArtwork, type HearthArtwork } from './hearth-gallery'
 import { getPortal, getVrWorld, portals, vrWorlds, type Portal } from './catalog'
 import { createDeck, deckSlots, selectDeck, shuffleDeck, stepDeck } from './vr-deck'
 import type { ImmersiveMode } from './capabilities'
@@ -24,6 +25,7 @@ export type SpatialShell = {
   setGazeAssist: (enabled: boolean) => void
   deckAction: (action: 'previous' | 'next' | 'shuffle') => void
   setMood: (mood: HearthMood) => void
+  setArtwork: (artwork: HearthArtwork) => void
   dispose: () => void
 }
 
@@ -35,6 +37,7 @@ type ShellCallbacks = {
   onNote: (note: string) => void
   onClock: (state: ClockDisplay) => void
   onMood: (mood: HearthMood) => void
+  onArtwork: (artwork: HearthArtwork) => void
   onInput?: (snapshot: XRInputDiagnostics) => void
 }
 
@@ -252,6 +255,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   const moodStorage = (() => { try { return window.localStorage } catch { return null } })()
   let mood: HearthMood = readHearthMood(moodStorage)
   applyCozyRoomMood(decor, mood)
+  let artwork: HearthArtwork = readHearthArtwork(moodStorage)
+  setHearthGalleryArt(decor, artwork)
   scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
 
   const banner = plane(headingTexture(), 3.25, 1.12)
@@ -389,6 +394,24 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   moodPanel.visible = false
   workspace.add(moodPanel)
 
+  const artworkPanel = plane(actionTexture('ART', HEARTH_ART_DETAILS[artwork].label.toUpperCase()), 1.05, 0.42)
+  artworkPanel.position.set(1.55, 0.47, -1.97)
+  artworkPanel.userData.action = 'art'
+  artworkPanel.visible = false
+  workspace.add(artworkPanel)
+
+  function setArtwork(next: HearthArtwork) {
+    if (next === artwork) return
+    artwork = next
+    setHearthGalleryArt(decor, artwork)
+    const material = artworkPanel.material as THREE.MeshBasicMaterial
+    material.map?.dispose()
+    material.map = actionTexture('ART', HEARTH_ART_DETAILS[artwork].label.toUpperCase())
+    material.needsUpdate = true
+    writeHearthArtwork(moodStorage, artwork)
+    callbacks.onArtwork(artwork)
+  }
+
   function setMood(next: HearthMood) {
     if (mood === next) return
     mood = next
@@ -525,8 +548,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   addKey('CLEAR', 0.35, 0.64, 0.46, 'pad')
   addKey('TOGGLE', 1.07, 1.28, 0.48, 'clock')
   addKey('RESET', 1.64, 1.28, 0.48, 'clock')
-  const targets: THREE.Mesh[] = [...cards, ...worldCards, ...deckButtons, openWorldPanel, moodPanel, ...resizeHandles, ...actionPanels, ...keyMeshes]
-  const gazeTargets: THREE.Mesh[] = [...cards, ...worldCards, ...actionPanels, moodPanel]
+  const targets: THREE.Mesh[] = [...cards, ...worldCards, ...deckButtons, openWorldPanel, moodPanel, artworkPanel, ...resizeHandles, ...actionPanels, ...keyMeshes]
+  const gazeTargets: THREE.Mesh[] = [...cards, ...worldCards, ...actionPanels, moodPanel, artworkPanel]
   const gazeReticle = new THREE.Mesh(
     new THREE.RingGeometry(0.027, 0.049, 28),
     new THREE.MeshBasicMaterial({ color: '#a6f6dd', side: THREE.DoubleSide, depthTest: false }),
@@ -699,6 +722,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     deckButtons.forEach((button) => { button.visible = mode === 'worlds' })
     openWorldPanel.visible = mode === 'worlds'
     moodPanel.visible = mode === 'worlds'
+    artworkPanel.visible = mode === 'worlds'
     if (mode === 'worlds' && !getVrWorld(selected)) activate(deck.active)
     if (mode === 'portals' && !portals.some((portal) => portal.id === selected)) activate(portals[0].id)
     callbacks.onView(view)
@@ -787,6 +811,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     else if (action === 'portals') setView('portals')
     else if (action === 'worlds') setView('worlds')
     else if (action === 'mood') setMood(nextHearthMood(mood))
+    else if (action === 'art') setArtwork(nextHearthArtwork(artwork))
     else if (action === 'deck-prev' && view === 'worlds') deckAction('previous')
     else if (action === 'deck-next' && view === 'worlds') deckAction('next')
     else if (action === 'deck-shuffle' && view === 'worlds') deckAction('shuffle')
@@ -1026,6 +1051,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     deckButtons.forEach((button) => button.scale.setScalar(hovered.has(button) ? 1.06 : 1))
     openWorldPanel.scale.setScalar(hovered.has(openWorldPanel) ? 1.06 : 1)
     moodPanel.scale.setScalar(hovered.has(moodPanel) ? 1.06 : 1)
+    artworkPanel.scale.setScalar(hovered.has(artworkPanel) ? 1.06 : 1)
     renderer.render(scene, camera)
     // Render has updated the XR camera pose; use it for head-gaze raycasts.
     updateGaze(time)
@@ -1112,5 +1138,6 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   callbacks.onNote(note)
   callbacks.onClock({ time: lastClockText, running: false })
   callbacks.onMood(mood)
-  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, deckAction, setMood, dispose }
+  callbacks.onArtwork(artwork)
+  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, deckAction, setMood, setArtwork, dispose }
 }

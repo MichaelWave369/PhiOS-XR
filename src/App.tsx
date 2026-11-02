@@ -5,6 +5,7 @@ import type { LayoutPreset } from './workspace'
 import { createSpatialShell, type ClockDisplay, type SpatialShell, type ViewMode } from './world'
 import { MAX_NOTE_CHARS } from './fieldtools'
 import { HEARTH_MOODS, HEARTH_MOOD_STYLES, type HearthMood } from './hearth-mood'
+import { HEARTH_ARTWORKS, HEARTH_ART_DETAILS, type HearthArtwork } from './hearth-gallery'
 import { emptyDiagnostics, type XRInputDiagnostics } from './xr-input'
 import { QUEST_CHECKS, QUEST_STORAGE_KEY, buildQuestExport, createQuestReport, decodeQuestReport, questCounts, recordQuestEvent, type QuestStatus } from './questlab'
 
@@ -17,6 +18,7 @@ export function App() {
   const [layout, setLayout] = useState<LayoutPreset>('arc')
   const [view, setView] = useState<ViewMode>('worlds')
   const [mood, setMood] = useState<HearthMood>('fireside')
+  const [artwork, setArtwork] = useState<HearthArtwork>('golden-spiral')
   const [fieldNote, setFieldNote] = useState('')
   const [clockDisplay, setClockDisplay] = useState<ClockDisplay>({ time: '00:00', running: false })
   const [support, setSupport] = useState<XRAvailability | null>(null)
@@ -101,6 +103,7 @@ export function App() {
         onNote: setFieldNote,
         onClock: setClockDisplay,
         onMood: setMood,
+        onArtwork: setArtwork,
         onInput: setInputDiagnostics,
       })
       shellRef.current = shell
@@ -227,6 +230,22 @@ export function App() {
                   aria-pressed={mood === option}
                   onClick={() => shellRef.current?.setMood(option)}>
                   {HEARTH_MOOD_STYLES[option].label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="hearth-gallery" role="group" aria-label="Phi Hearth wall gallery">
+            <div className="hearth-mood-heading">
+              <strong>WALL GALLERY</strong>
+              <small>{HEARTH_ART_DETAILS[artwork].subtitle}. Original artwork generated in this browser, no cloud or uploads.</small>
+            </div>
+            <div className="hearth-art-actions">
+              {HEARTH_ARTWORKS.map((option) => (
+                <button key={option} type="button"
+                  className={artwork === option ? 'is-active' : ''}
+                  aria-pressed={artwork === option}
+                  onClick={() => shellRef.current?.setArtwork(option)}>
+                  {HEARTH_ART_DETAILS[option].label}
                 </button>
               ))}
             </div>

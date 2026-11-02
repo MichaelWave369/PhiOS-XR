@@ -28,6 +28,7 @@ describe('Quest WebXR input rescue', () => {
     expect(safeGazeTarget('atlas')).toBe('portal:atlas')
     expect(safeGazeTarget(undefined, 'tools')).toBe('action:tools')
     expect(safeGazeTarget(undefined, 'wall')).toBe('action:wall')
+    expect(safeGazeTarget(undefined, 'art')).toBe('action:art')
     expect(safeGazeTarget(undefined, 'exit')).toBeNull()
     expect(safeGazeTarget(undefined, 'reset')).toBeNull()
     expect(safeGazeTarget(undefined, 'recenter')).toBeNull()

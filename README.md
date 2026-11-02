@@ -57,6 +57,14 @@ The Hearth has three locally stored, bounded lighting choices: **Fireside**, **T
 
 Quest 3 acceptance: switch all three moods with the 2D buttons, a controller trigger, and gaze dwell; enter/exit VR and MR; ensure the MOOD target does not overlap OPEN PORTAL; check the shelf remains readable and the frame rate remains comfortable. Green CI is not a physical headset certification.
 
+## Edition 13: Original local Hearth Gallery
+
+A framed artwork is mounted above the Hearth sofa. Choose between three original, procedurally rendered studies: **Golden Spiral**, **Field Stars**, and **Living Bloom**. The painting texture is generated once on load, and only swapped when a new choice is made. The old GPU texture is disposed. No user files, network images, project artwork or remote integrations are loaded. These are original Φ-style studies, **not existing Domistika exports**.
+
+Gallery controls are in the accessible browser interface and as the new **ART** button on the immersive shelf alongside MOOD and OPEN PORTAL. Controller selection and the existing 2.3-second safe gaze dwell may change art without leaving PhiOS XR. As with mood, preferences use a bounded local-storage value with safe defaults if storage is disabled. **Gaze still cannot launch external links**. The gallery and other room decor are hidden in immersive AR so passthrough remains unobstructed.
+
+Quest hardware acceptance: verify artwork is legible from seated and standing viewpoints; select all three gallery styles using 2D buttons, controller selection and safe gaze; check the ART and OPEN PORTAL targets are distinct and do not cause unintended navigation; confirm VR and MR entry/exit, local preference persistence, and acceptable frame rate.
+
 ## Quest 3 testing
 
 1. Use the GitHub Pages deployment at `https://michaelwave369.github.io/PhiOS-XR/` **after** the deployment workflow has succeeded and GitHub Pages is configured for **GitHub Actions**.
