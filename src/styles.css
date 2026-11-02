@@ -162,3 +162,20 @@
 .vr-worlds-active .open-portal:hover{background:#427361}
 .vr-worlds-active .layout-action.is-active{background:#456251;border-color:#ddc18f;color:#fff4d9}
 .vr-worlds-active .footer{background:#111c1d;border-color:#615342}
+
+
+/* Edition 12: tactile room ambience controls for desktop and Quest Browser. */
+.hearth-moods{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:13px 17px;background:#1c302e;border:1px solid #7e7256;border-top:0}
+.hearth-mood-heading{display:flex;flex-direction:column;gap:5px}
+.hearth-mood-heading strong{color:#f3d7ab;font:750 11px ui-monospace,monospace;letter-spacing:.1em}
+.hearth-mood-heading small{color:#c6d2c7;font-size:11px}
+.hearth-mood-actions{display:flex;gap:7px;flex-wrap:wrap}
+.hearth-mood-actions button{min-height:42px;padding:9px 13px;background:#27433c;border:1px solid #648378;border-radius:6px;color:#e1ede4;font:700 11px system-ui}
+.hearth-mood-actions button.is-active{background:#d7b88b;border-color:#f5ddba;color:#1b2825}
+.hearth-mood-actions button:hover{border-color:#ffe4b7}
+.hearth-mood-actions button:focus-visible{outline:3px solid #f4d9ae;outline-offset:2px}
+.mood-twilight .hearth-moods{background:#1b2935;border-color:#57789a}
+.mood-twilight .stage{border-color:#50728c}
+.mood-morning .hearth-moods{background:#34483e;border-color:#9aa884}
+.mood-morning .stage{border-color:#a9b590}
+@media(max-width:750px){.hearth-mood-actions{width:100%}.hearth-mood-actions button{flex:1 1 27%;padding:9px 6px}}

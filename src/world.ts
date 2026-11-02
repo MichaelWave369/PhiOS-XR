@@ -1,5 +1,6 @@
 import * as THREE from 'three'
-import { createCozyRoom } from './cozy-room'
+import { createCozyRoom, applyCozyRoomMood } from './cozy-room'
+import { HEARTH_MOOD_STYLES, nextHearthMood, readHearthMood, writeHearthMood, type HearthMood } from './hearth-mood'
 import { getPortal, getVrWorld, portals, vrWorlds, type Portal } from './catalog'
 import { createDeck, deckSlots, selectDeck, shuffleDeck, stepDeck } from './vr-deck'
 import type { ImmersiveMode } from './capabilities'
@@ -22,6 +23,7 @@ export type SpatialShell = {
   clockAction: (action: 'toggle' | 'reset') => void
   setGazeAssist: (enabled: boolean) => void
   deckAction: (action: 'previous' | 'next' | 'shuffle') => void
+  setMood: (mood: HearthMood) => void
   dispose: () => void
 }
 
@@ -32,6 +34,7 @@ type ShellCallbacks = {
   onView: (mode: ViewMode) => void
   onNote: (note: string) => void
   onClock: (state: ClockDisplay) => void
+  onMood: (mood: HearthMood) => void
   onInput?: (snapshot: XRInputDiagnostics) => void
 }
 
@@ -225,7 +228,7 @@ function plane(texture: THREE.Texture, width: number, height: number) {
 
 export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks): SpatialShell {
   const scene = new THREE.Scene()
-  scene.background = new THREE.Color('#201d20')
+  scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
   const workspace = new THREE.Group()
   scene.add(workspace)
   const camera = new THREE.PerspectiveCamera(65, 1, 0.05, 100)
@@ -245,6 +248,9 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   const decor = new THREE.Group()
   workspace.add(decor)
   createCozyRoom(decor)
+  let mood: HearthMood = readHearthMood(window.localStorage)
+  applyCozyRoomMood(decor, mood)
+  scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
 
   const banner = plane(headingTexture(), 3.25, 1.12)
   banner.position.set(0, 3.11, -2.45)
@@ -374,6 +380,26 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   openWorldPanel.visible = false
   workspace.add(openWorldPanel)
 
+  // One easy-to-reach, safe-to-gaze mood control, separate from external links.
+  const moodPanel = plane(actionTexture('MOOD', HEARTH_MOOD_STYLES[mood].label.toUpperCase()), 1.05, 0.42)
+  moodPanel.position.set(-1.55, 0.47, -1.97)
+  moodPanel.userData.action = 'mood'
+  moodPanel.visible = false
+  workspace.add(moodPanel)
+
+  function setMood(next: HearthMood) {
+    if (mood === next) return
+    mood = next
+    applyCozyRoomMood(decor, mood)
+    if (scene.background !== null) scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
+    const material = moodPanel.material as THREE.MeshBasicMaterial
+    material.map?.dispose()
+    material.map = actionTexture('MOOD', HEARTH_MOOD_STYLES[mood].label.toUpperCase())
+    material.needsUpdate = true
+    writeHearthMood(window.localStorage, mood)
+    callbacks.onMood(mood)
+  }
+
   // First-party spatial tools are interactive WebGL surfaces, not embedded websites.
   const toolGroup = new THREE.Group()
   toolGroup.visible = false
@@ -497,8 +523,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   addKey('CLEAR', 0.35, 0.64, 0.46, 'pad')
   addKey('TOGGLE', 1.07, 1.28, 0.48, 'clock')
   addKey('RESET', 1.64, 1.28, 0.48, 'clock')
-  const targets: THREE.Mesh[] = [...cards, ...worldCards, ...deckButtons, openWorldPanel, ...resizeHandles, ...actionPanels, ...keyMeshes]
-  const gazeTargets: THREE.Mesh[] = [...cards, ...worldCards, ...actionPanels]
+  const targets: THREE.Mesh[] = [...cards, ...worldCards, ...deckButtons, openWorldPanel, moodPanel, ...resizeHandles, ...actionPanels, ...keyMeshes]
+  const gazeTargets: THREE.Mesh[] = [...cards, ...worldCards, ...actionPanels, moodPanel]
   const gazeReticle = new THREE.Mesh(
     new THREE.RingGeometry(0.027, 0.049, 28),
     new THREE.MeshBasicMaterial({ color: '#a6f6dd', side: THREE.DoubleSide, depthTest: false }),
@@ -670,6 +696,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     layoutDeck()
     deckButtons.forEach((button) => { button.visible = mode === 'worlds' })
     openWorldPanel.visible = mode === 'worlds'
+    moodPanel.visible = mode === 'worlds'
     if (mode === 'worlds' && !getVrWorld(selected)) activate(deck.active)
     if (mode === 'portals' && !portals.some((portal) => portal.id === selected)) activate(portals[0].id)
     callbacks.onView(view)
@@ -757,6 +784,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     else if (action === 'tools') setView('tools')
     else if (action === 'portals') setView('portals')
     else if (action === 'worlds') setView('worlds')
+    else if (action === 'mood') setMood(nextHearthMood(mood))
     else if (action === 'deck-prev' && view === 'worlds') deckAction('previous')
     else if (action === 'deck-next' && view === 'worlds') deckAction('next')
     else if (action === 'deck-shuffle' && view === 'worlds') deckAction('shuffle')
@@ -942,7 +970,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   }
 
   renderer.setAnimationLoop((time) => {
-    // Static, low-draw-call synthwave geometry avoids per-frame scene animation.
+    // Static, low-motion room geometry avoids per-frame scene animation.
     const displayTime = formatClock(elapsedClock(clock, time))
     if (displayTime !== lastClockText) {
       lastClockText = displayTime
@@ -995,6 +1023,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     actionPanels.forEach((panel) => panel.scale.setScalar(hovered.has(panel) ? 1.08 : 1))
     deckButtons.forEach((button) => button.scale.setScalar(hovered.has(button) ? 1.06 : 1))
     openWorldPanel.scale.setScalar(hovered.has(openWorldPanel) ? 1.06 : 1)
+    moodPanel.scale.setScalar(hovered.has(moodPanel) ? 1.06 : 1)
     renderer.render(scene, camera)
     // Render has updated the XR camera pose; use it for head-gaze raycasts.
     updateGaze(time)
@@ -1028,7 +1057,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       gaze = { target: null, since: 0, fired: false }
       gazeProgress = 0
       noteInput('SESSION ENDED')
-      scene.background = new THREE.Color('#201d20')
+      scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
       decor.visible = true
       workspace.position.set(0, 0, 0)
       workspace.rotation.set(0, 0, 0)
@@ -1038,7 +1067,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     })
     try {
       // WebXR AR requires a transparent scene background to expose passthrough.
-      scene.background = mode === 'immersive-ar' ? null : new THREE.Color('#201d20')
+      scene.background = mode === 'immersive-ar' ? null : new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
       decor.visible = mode !== 'immersive-ar'
       await renderer.xr.setSession(session)
       input = { ...emptyDiagnostics(gazeEnabled), sourceCount: session.inputSources.length }
@@ -1047,7 +1076,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       callbacks.onSession(mode)
     } catch (error) {
       await session.end().catch(() => {})
-      scene.background = new THREE.Color('#201d20')
+      scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
       decor.visible = true
       throw error
     }
@@ -1080,5 +1109,6 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   callbacks.onView(view)
   callbacks.onNote(note)
   callbacks.onClock({ time: lastClockText, running: false })
-  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, deckAction, dispose }
+  callbacks.onMood(mood)
+  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, deckAction, setMood, dispose }
 }

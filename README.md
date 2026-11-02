@@ -51,6 +51,12 @@ The destination links are external sites. Their current headset and cross-origin
 
 **Quest comfort acceptance:** Test seated and standing recenter, arm's-length shelf selection, controller/hand-select fallback, readable cards, stable 72/90 Hz performance where supported, 10 enter/exit cycles, and MR passthrough visibility on the actual headset. CI can verify TypeScript and unit tests, not physical comfort or device compatibility.
 
+## Edition 12: Three quiet room moods
+
+The Hearth has three locally stored, bounded lighting choices: **Fireside**, **Twilight**, and **Morning**. Use the accessible browser buttons or point, trigger or safely gaze-dwell over the **MOOD** button beside OPEN PORTAL inside the immersive shelf. The room's existing lights and window colors update instantly without rebuilding geometry or adding animation; no sounds, downloaded shaders, remote resources or privileged features. Each selection is saved only to this browser when storage is allowed; blocked storage falls back to Fireside without breaking navigation. The MR compositor remains transparent and the decorative room stays hidden.
+
+Quest 3 acceptance: switch all three moods with the 2D buttons, a controller trigger, and gaze dwell; enter/exit VR and MR; ensure the MOOD target does not overlap OPEN PORTAL; check the shelf remains readable and the frame rate remains comfortable. Green CI is not a physical headset certification.
+
 ## Quest 3 testing
 
 1. Use the GitHub Pages deployment at `https://michaelwave369.github.io/PhiOS-XR/` **after** the deployment workflow has succeeded and GitHub Pages is configured for **GitHub Actions**.
