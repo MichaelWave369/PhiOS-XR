@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { HEARTH_MOOD_STYLES, type HearthMood } from './hearth-mood'
 
 /**
  * The Φ Hearth is an entirely local, low-motion living room around the XR shelf.
@@ -41,11 +42,15 @@ export function createCozyRoom(group: THREE.Group): void {
     return mesh
   }
 
-  group.add(new THREE.HemisphereLight('#e4c49a', '#283844', 2.1))
+  const ambientLight = new THREE.HemisphereLight('#e4c49a', '#283844', 2.1)
+  ambientLight.name = 'ambient-light'
+  group.add(ambientLight)
   const hearthLight = new THREE.PointLight('#ffb579', 23, 7.5, 2)
+  hearthLight.name = 'hearth-light'
   hearthLight.position.set(3.1, 1.1, -5.8)
   group.add(hearthLight)
   const readingLight = new THREE.PointLight('#f4dcb4', 11, 5.5, 2)
+  readingLight.name = 'reading-light'
   readingLight.position.set(-3.4, 2.6, -3.5)
   group.add(readingLight)
 
@@ -126,5 +131,31 @@ export function createCozyRoom(group: THREE.Group): void {
       -3.4 + Math.cos(i * Math.PI / 3) * 0.29, leaf)
     frond.rotation.z = Math.sin(i * Math.PI / 3) * 0.62
     frond.rotation.x = Math.cos(i * Math.PI / 3) * 0.56
+  }
+}
+
+
+/** Update light and window materials in place. No new geometry or frame animation. */
+export function applyCozyRoomMood(group: THREE.Group, mood: HearthMood): void {
+  const profile = HEARTH_MOOD_STYLES[mood]
+  const ambient = group.getObjectByName('ambient-light')
+  if (ambient instanceof THREE.HemisphereLight) {
+    ambient.color.set(profile.ambientSky)
+    ambient.groundColor.set(profile.ambientGround)
+    ambient.intensity = profile.ambientIntensity
+  }
+  const fire = group.getObjectByName('hearth-light')
+  if (fire instanceof THREE.PointLight) fire.intensity = profile.fireIntensity
+  const reading = group.getObjectByName('reading-light')
+  if (reading instanceof THREE.PointLight) reading.intensity = profile.readingIntensity
+  const window = group.getObjectByName('window-sky')
+  if (window instanceof THREE.Mesh && window.material instanceof THREE.MeshBasicMaterial) {
+    window.material.color.set(profile.windowSky)
+  }
+  const moon = group.getObjectByName('window-moon')
+  if (moon) moon.visible = profile.moonVisible
+  for (let i = 0; i < 9; i++) {
+    const star = group.getObjectByName('window-star-' + i)
+    if (star) star.visible = profile.moonVisible
   }
 }

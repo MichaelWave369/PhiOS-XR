@@ -4,6 +4,7 @@ import { getPortal, getVrWorld, portals, vrWorlds } from './catalog'
 import type { LayoutPreset } from './workspace'
 import { createSpatialShell, type ClockDisplay, type SpatialShell, type ViewMode } from './world'
 import { MAX_NOTE_CHARS } from './fieldtools'
+import { HEARTH_MOODS, HEARTH_MOOD_STYLES, type HearthMood } from './hearth-mood'
 import { emptyDiagnostics, type XRInputDiagnostics } from './xr-input'
 import { QUEST_CHECKS, QUEST_STORAGE_KEY, buildQuestExport, createQuestReport, decodeQuestReport, questCounts, recordQuestEvent, type QuestStatus } from './questlab'
 
@@ -15,6 +16,7 @@ export function App() {
   const [selectedId, setSelectedId] = useState('domistika-xr')
   const [layout, setLayout] = useState<LayoutPreset>('arc')
   const [view, setView] = useState<ViewMode>('worlds')
+  const [mood, setMood] = useState<HearthMood>('fireside')
   const [fieldNote, setFieldNote] = useState('')
   const [clockDisplay, setClockDisplay] = useState<ClockDisplay>({ time: '00:00', running: false })
   const [support, setSupport] = useState<XRAvailability | null>(null)
@@ -98,6 +100,7 @@ export function App() {
         onView: setView,
         onNote: setFieldNote,
         onClock: setClockDisplay,
+        onMood: setMood,
         onInput: setInputDiagnostics,
       })
       shellRef.current = shell
@@ -134,7 +137,7 @@ export function App() {
   }
 
   return (
-    <div className={view === 'worlds' ? 'app vr-worlds-active' : 'app'}>
+    <div className={view === 'worlds' ? 'app vr-worlds-active mood-' + mood : 'app mood-' + mood}>
       <div className="ambient ambient-one" aria-hidden="true" />
       <div className="ambient ambient-two" aria-hidden="true" />
       <header className="topbar">
@@ -210,6 +213,22 @@ export function App() {
               }} disabled={!sessionMode}>
                 EXIT XR
               </button>
+            </div>
+          </div>
+          <div className="hearth-moods" role="group" aria-label="Phi Hearth ambience">
+            <div className="hearth-mood-heading">
+              <strong>ROOM AMBIENCE</strong>
+              <small>{HEARTH_MOOD_STYLES[mood].description} Changes stay on this browser.</small>
+            </div>
+            <div className="hearth-mood-actions">
+              {HEARTH_MOODS.map((option) => (
+                <button key={option} type="button"
+                  className={mood === option ? 'is-active' : ''}
+                  aria-pressed={mood === option}
+                  onClick={() => shellRef.current?.setMood(option)}>
+                  {HEARTH_MOOD_STYLES[option].label}
+                </button>
+              ))}
             </div>
           </div>
           <div className="xr-assist-options">
