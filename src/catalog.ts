@@ -6,6 +6,8 @@ export type Portal = {
   href: string
   kind: 'system' | 'intelligence' | 'exploration' | 'creative' | 'evidence'
   number: string
+  /** Companion projects are links, not claims of an immersive experience. */
+  experience?: 'immersive' | 'companion'
 }
 
 export const portals: readonly Portal[] = [
@@ -67,6 +69,26 @@ export const vrWorlds: readonly Portal[] = [
     id: 'lenz-xr', name: 'LENZ XR', subtitle: 'Connected reality gates',
     description: 'Explore four linked LENZ zones in its stationary, experimental immersive VR laboratory. Full 3D game mechanics are still in development.',
     href: 'https://michaelwave369.github.io/LENZ/xr.html', kind: 'exploration', number: 'V5'
+  },
+  {
+    id: 'phixrcommons', name: 'PHI XR COMMONS', subtitle: 'Shared two-headset rooms',
+    description: 'Experimental shared XR screens and hangout prototypes. Linked project landing page; simultaneous headset compatibility requires device testing.',
+    href: 'https://michaelwave369.github.io/PhiXRCommons/', kind: 'exploration', number: 'X6', experience: 'companion'
+  },
+  {
+    id: 'genewrist', name: 'GEN.E.WRIST', subtitle: 'Universal XR context wrist',
+    description: 'Local-first wearable interface and host-registered context system. Companion project; not a standalone immersive game.',
+    href: 'https://michaelwave369.github.io/GenEWrist/', kind: 'system', number: 'X7', experience: 'companion'
+  },
+  {
+    id: 'overstrings', name: 'OVERSTRINGS', subtitle: 'Hand and spatial instrument research',
+    description: 'Local-first resonance and control research. Opens a project demo, not a guaranteed Quest hand-tracking experience.',
+    href: 'https://michaelwave369.github.io/OverStrings/', kind: 'creative', number: 'X8', experience: 'companion'
+  },
+  {
+    id: 'optieyes', name: 'OPTI-EYES', subtitle: 'Adaptive optics research',
+    description: 'An open companion research project for a future wearable ecosystem; it does not provide headset camera or OS privileges.',
+    href: 'https://michaelwave369.github.io/Opti-Eyes/', kind: 'system', number: 'X9', experience: 'companion'
   }
 ]
 

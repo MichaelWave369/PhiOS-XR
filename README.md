@@ -1,6 +1,6 @@
 # Φ PhiOS XR
 
-**The Sovereign Spatial Shell · Edition 07**
+**The Sovereign Spatial Shell · Edition 11: The Φ Hearth**
 
 An experimental, open-source WebXR workspace for Quest 3 and other compatible browsers. PhiOS XR is a **separate user interface**, not a replacement for Meta Horizon OS, and not an installation of the PhiOS x86_64 Linux image.
 
@@ -26,23 +26,30 @@ npm run build
 npm run preview
 ```
 
-## VR Worlds launchpad (Domistika XR, Break the Matrix, Spark, Pulse 369 and LENZ)
+## The Φ Hearth · living-room XR home
 
-The WebXR shell opens into a **synthwave / OutRun-inspired VR WORLDS deck**, with a generated sunset, silhouetted skyline, perspective neon road grid, stars and five original canvas-drawn world cards. Three cards appear at a time: a large focused destination and two angled previews. The six original, movable PhiOS core portals remain available under **PORTALS** without changing their saved layout. Desktop controls, the 2D mode switch and in-headset controls share the same deck. The five destinations are:
+The default desktop and WebXR VR scene is now a warm, stationary, original 3D living room with wood flooring, a sofa, rug, coffee table, reading corner, night window, plants and a glowing fireplace. The home is a **calm starting place** rather than a neon highway. No downloadable textures, autoplay music, blinking flames, network shaders, dynamic physics or privileged operations are required. It uses simple geometry and local materials. The entire room is hidden during **immersive MR** to preserve passthrough; the same read-only shelf and controls remain available. A browser-based 2D catalog remains the accessible fallback.
+
+The three-card carousel has become the **Hearth Shelf**. The six original PhiOS portals, saved workspace layout, local Field Pad / Focus Clock, recenter / exit controls, input diagnostics and safe gaze selection are unchanged. Gaze can select a shelf item but **cannot launch websites**. A controller select on OPEN PORTAL, or a deliberate 2D link, navigates to the selected external project. This ends the shared PhiOS XR context; it does not embed or install the destination.
+
+### Immersive destinations (existing, experimental)
 
 - **Domistika XR:** https://michaelwave369.github.io/Domistika/xr.html
-- **Break the Matrix:** https://michaelwave369.github.io/BTM/ (choose Immersive VR or VR Arcade inside the game)
+- **Break the Matrix:** https://michaelwave369.github.io/BTM/
 - **Spark the Substrate VR:** https://michaelwave369.github.io/SparkTheSubstrate/vr/
-- **Pulse 369 Quest Lab:** https://michaelwave369.github.io/Pulse369/quest.html (public VR controller/tracking and rhythm testing, **not** the full account-backed fitness app)
-- **LENZ XR:** https://michaelwave369.github.io/LENZ/xr.html (experimental, stationary immersive portals across the four LENZ experience zones; full VR game mechanics not yet implemented)
+- **Pulse 369 Quest Lab:** https://michaelwave369.github.io/Pulse369/quest.html (public lab; not the account-backed studio)
+- **LENZ XR:** https://michaelwave369.github.io/LENZ/xr.html (experimental stationary portals, not a full game)
 
-**Quest path:** open PhiOS XR in Quest Browser and choose **ENTER VR**. The **VR WORLDS** deck is now the landing view. Point/trigger **PREV** or **NEXT** to move through the five worlds, **SHUFFLE** to randomize the deck, or select either side card to bring that world forward. Then point/trigger the separate **OPEN WORLD · LEAVE PHIOS XR** control to navigate. There is also a complete 2D accessible deck and direct HTTPS links. Gaze assist may select cards but **never** activates shuffle, previous/next, or external navigation. This leaves the PhiOS XR immersive session for the destination site's own VR entry. If Quest Browser blocks navigation from immersive mode, exit XR and use the direct 2D link instead.
+### XR companions (not presented as playable immersive worlds)
 
-**Pulse 369 access note:** The public showcase at https://michaelwave369.github.io/Pulse369/ describes the full studio, but the playable account-backed app at https://pulse-369.larrina.chatgpt.site/ returned HTTP 401 during verification. The launcher therefore uses the public **Quest Lab**, which is accessible without a sign-in. The full studio has not been treated as publicly reachable.
+- **Phi XR Commons:** https://michaelwave369.github.io/PhiXRCommons/ (shared-room work-in-progress)
+- **GEN.E.WRIST:** https://michaelwave369.github.io/GenEWrist/ (context and wrist UI)
+- **OverStrings:** https://michaelwave369.github.io/OverStrings/ (hand/spatial instrument research)
+- **Opti-Eyes:** https://michaelwave369.github.io/Opti-Eyes/ (adaptive-optics research)
 
-**Visual/performance boundaries:** All scenery and world-card art is original, generated locally by Three.js geometry and Canvas textures. No downloaded images, network shaders, autoplay audio or flashing animation are used. The scenery disappears in MR so it does not obscure passthrough. The deck is session-only: shuffling does not rewrite the saved six-portal workspace. Quest 3 controller navigation, in-session outbound navigation, seated comfort and frame rate still need physical headset verification.
+The destination links are external sites. Their current headset and cross-origin launch behavior must be verified on a Quest 3, and no shared app session, live room scanning, camera frames, Meta OS replacement or device-level privileges are claimed.
 
-The five destinations are curated links, not embedded apps, a shared WebXR session, cross-origin scene access, or an OS-level app launcher. They do not receive PhiOS runtime authority. The six original portals and their version-1 saved panel arrangement remain unchanged. New in-headset launch behavior needs physical Quest validation before claiming compatibility.
+**Quest comfort acceptance:** Test seated and standing recenter, arm's-length shelf selection, controller/hand-select fallback, readable cards, stable 72/90 Hz performance where supported, 10 enter/exit cycles, and MR passthrough visibility on the actual headset. CI can verify TypeScript and unit tests, not physical comfort or device compatibility.
 
 ## Quest 3 testing
 

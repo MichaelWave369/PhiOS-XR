@@ -4,7 +4,7 @@ import { getPortal, getVrWorld, portals, vrWorlds } from './catalog'
 import { decodeWorkspace, presetPanels } from './workspace'
 import { safeGazeTarget } from './xr-input'
 
-describe('five curated VR destinations', () => {
+describe('immersive worlds and explicitly marked XR companions', () => {
   it('points to the actual XR entries, including Pulse 369 Quest Lab and LENZ XR', () => {
     expect(vrWorlds.map(({ id, href }) => [id, href])).toEqual([
       ['domistika-xr', 'https://michaelwave369.github.io/Domistika/xr.html'],
@@ -12,6 +12,10 @@ describe('five curated VR destinations', () => {
       ['spark-vr', 'https://michaelwave369.github.io/SparkTheSubstrate/vr/'],
       ['pulse369-vr', 'https://michaelwave369.github.io/Pulse369/quest.html'],
       ['lenz-xr', 'https://michaelwave369.github.io/LENZ/xr.html'],
+      ['phixrcommons', 'https://michaelwave369.github.io/PhiXRCommons/'],
+      ['genewrist', 'https://michaelwave369.github.io/GenEWrist/'],
+      ['overstrings', 'https://michaelwave369.github.io/OverStrings/'],
+      ['optieyes', 'https://michaelwave369.github.io/Opti-Eyes/'],
     ])
     for (const world of vrWorlds) {
       expect(getPortal(world.id)).toEqual(world)
@@ -23,11 +27,13 @@ describe('five curated VR destinations', () => {
     expect(getVrWorld('pulse369-vr')?.description).toContain('Not the full hosted Pulse 369 fitness studio')
     expect(getVrWorld('lenz-xr')?.description).toContain('stationary')
     expect(new Set(vrWorlds.map(({ id }) => id)).size).toBe(vrWorlds.length)
+    expect(vrWorlds.filter((world) => world.experience === 'companion')).toHaveLength(4)
+    expect(vrWorlds.filter((world) => world.experience !== 'companion')).toHaveLength(5)
   })
 
   it('does not break existing six-portal locally saved workspace snapshots', () => {
     expect(portals).toHaveLength(6)
-    expect(vrWorlds).toHaveLength(5)
+    expect(vrWorlds).toHaveLength(9)
     const panels = presetPanels('arc')
     expect(panels).toHaveLength(6)
     expect(decodeWorkspace({ version: 1, preset: 'arc', panels })?.panels).toEqual(panels)
@@ -49,7 +55,7 @@ describe('five curated VR destinations', () => {
     expect(source).toContain('const slots = deckSlots(deck)')
     expect(source).toContain("card.visible = view === 'worlds' && !!position")
     expect(source).toContain("side === 0 ? -1.97 : -2.36")
-    expect(source).toContain('createOutrunBackdrop(decor)')
+    expect(source).toContain('createCozyRoom(decor)')
     expect(source).toContain("const topActions = ['portals', 'worlds', 'tools', 'recenter', 'exit']")
     expect(source).toContain("layoutControlDock('worlds')")
     expect(source).toContain("banner.visible = mode !== 'worlds'")
