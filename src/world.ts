@@ -423,7 +423,6 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     material.needsUpdate = true
     writeHearthMood(moodStorage, mood)
     callbacks.onMood(mood)
-  callbacks.onArtwork(artwork)
   }
 
   // First-party spatial tools are interactive WebGL surfaces, not embedded websites.
@@ -1139,5 +1138,6 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   callbacks.onNote(note)
   callbacks.onClock({ time: lastClockText, running: false })
   callbacks.onMood(mood)
+  callbacks.onArtwork(artwork)
   return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, deckAction, setMood, setArtwork, dispose }
 }
