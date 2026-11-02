@@ -7,7 +7,7 @@ describe('Phi Hearth local room', () => {
     const room = new THREE.Group()
     createCozyRoom(room)
     expect(room.name).toBe('The Phi Hearth')
-    for (const name of ['wood-floor', 'sofa-base', 'coffee-table-top', 'rug-center', 'window-sky', 'fireplace-opening', 'reading-lamp-shade', 'plant-pot']) {
+    for (const name of ['wood-floor', 'sofa-base', 'coffee-table-top', 'rug-center', 'window-sky', 'fireplace-opening', 'reading-lamp-shade', 'plant-pot', 'hearth-gallery-frame', 'hearth-gallery-painting']) {
       expect(room.getObjectByName(name)).toBeDefined()
     }
     const meshes: THREE.Mesh[] = []

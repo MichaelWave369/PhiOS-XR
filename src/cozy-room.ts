@@ -108,6 +108,18 @@ export function createCozyRoom(group: THREE.Group): void {
   box('mantel-picture', 0.92, 0.62, 0.08, 3.32, 2.43, -6.98, wood)
   box('mantel-picture-art', 0.77, 0.47, 0.09, 3.32, 2.43, -6.925, fabricDark)
 
+  // A real framed art surface above the sofa. The artwork is drawn locally
+  // when the browser shell starts, rather than downloaded or animated.
+  box('hearth-gallery-frame', 1.6, 1.25, 0.11, 0.60, 2.60, -6.95, woodLight)
+  box('hearth-gallery-mat', 1.42, 1.08, 0.035, 0.60, 2.60, -6.87, trim)
+  const painting = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.28, 0.94),
+    new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide }),
+  )
+  painting.name = 'hearth-gallery-painting'
+  painting.position.set(0.60, 2.60, -6.83)
+  group.add(painting)
+
   // Reading corner, shelves, and plant provide a lived-in silhouette.
   box('bookcase-back', 1.16, 2.62, 0.35, -4.38, 1.36, -5.38, wood)
   for (let i = 0; i < 4; i++) {

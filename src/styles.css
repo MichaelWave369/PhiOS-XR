@@ -179,3 +179,13 @@
 .mood-morning .hearth-moods{background:#34483e;border-color:#9aa884}
 .mood-morning .stage{border-color:#a9b590}
 @media(max-width:750px){.hearth-mood-actions{width:100%}.hearth-mood-actions button{flex:1 1 27%;padding:9px 6px}}
+
+
+/* Edition 13: a tactile, fully local art gallery in the Hearth. */
+.hearth-gallery{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:13px 17px;background:#223633;border:1px solid #75674f;border-top:0}
+.hearth-art-actions{display:flex;gap:7px;flex-wrap:wrap}
+.hearth-art-actions button{min-height:42px;padding:9px 13px;background:#29463f;border:1px solid #718778;border-radius:6px;color:#edf0e5;font:700 11px system-ui}
+.hearth-art-actions button.is-active{background:#d4af77;border-color:#f4d8a9;color:#172826}
+.hearth-art-actions button:hover{border-color:#ffe0ac}
+.hearth-art-actions button:focus-visible{outline:3px solid #f4d9ae;outline-offset:2px}
+@media(max-width:750px){.hearth-art-actions{width:100%}.hearth-art-actions button{flex:1 1 28%;padding:9px 6px}}
