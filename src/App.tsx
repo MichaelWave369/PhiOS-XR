@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import FieldCompanionReceiver from './FieldCompanionReceiver'
 import { detectXRSupport, type ImmersiveMode, type XRAvailability } from './capabilities'
 import { getPortal, getVrWorld, portals, vrWorlds } from './catalog'
 import type { LayoutPreset } from './workspace'
@@ -490,6 +491,7 @@ export function App() {
         </details>
       </section>
 
+      <FieldCompanionReceiver />
       <footer className="footer">
         <span>Φ ENTER THE FIELD <span className="footer-divider">/</span> LEDGER ABOVE EGO</span>
         <span>CAPABILITY ≠ AUTHORITY <span className="footer-divider">·</span> MIT OPEN SOURCE</span>
