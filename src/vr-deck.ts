@@ -1,4 +1,4 @@
-/** Pure, local-only state for the PhiOS XR synthwave VR-world carousel. */
+/** Pure, local-only state for the PhiOS XR living-room world shelf. */
 export type Deck = { readonly order: readonly string[]; readonly active: string }
 export type DeckSlot = { id: string; slot: -1 | 0 | 1 }
 

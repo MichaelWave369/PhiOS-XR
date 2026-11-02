@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { createCozyRoom } from './cozy-room'
 import { getPortal, getVrWorld, portals, vrWorlds, type Portal } from './catalog'
 import { createDeck, deckSlots, selectDeck, shuffleDeck, stepDeck } from './vr-deck'
 import type { ImmersiveMode } from './capabilities'
@@ -98,115 +99,55 @@ function portalTexture(index: number, selected: boolean, source: readonly Portal
 }
 
 
-/** Material-generated OutRun art, bundled locally without remote textures or shaders. */
+/** Warm, locally drawn destination cards for the living-room world shelf. */
 function vrCardTexture(world: Portal, focused: boolean) {
   return makeTexture((ctx, w, h) => {
-    const gradient = ctx.createLinearGradient(0, 0, w, h)
-    gradient.addColorStop(0, '#192e50')
-    gradient.addColorStop(0.55, '#101a35')
-    gradient.addColorStop(1, '#0a1124')
-    rounded(ctx, 11, 11, w - 22, h - 22, 42)
-    ctx.fillStyle = gradient
+    const bg = ctx.createLinearGradient(0, 0, w, h)
+    bg.addColorStop(0, '#374a47')
+    bg.addColorStop(0.55, '#1b3334')
+    bg.addColorStop(1, '#15212c')
+    rounded(ctx, 11, 11, w - 22, h - 22, 38)
+    ctx.fillStyle = bg
     ctx.fill()
-    ctx.lineWidth = focused ? 10 : 5
-    ctx.strokeStyle = focused ? '#ffb363' : '#55dedc'
+    ctx.lineWidth = focused ? 9 : 4
+    ctx.strokeStyle = focused ? '#efc28c' : '#749e95'
     ctx.stroke()
-    // Distinctive neon horizon, sun, and disappearing highway inside each card.
-    const sun = ctx.createLinearGradient(0, 110, 0, 340)
-    sun.addColorStop(0, '#ffca79')
-    sun.addColorStop(1, '#ef4b9b')
-    ctx.fillStyle = sun
-    ctx.beginPath()
-    ctx.arc(730, 234, 105, 0, Math.PI * 2)
+
+    // Each card suggests a door to a different world, not a live embedded app.
+    ctx.fillStyle = '#745a42'
+    rounded(ctx, 655, 104, 212, 330, 98)
     ctx.fill()
-    ctx.fillStyle = '#121e3b'
-    for (let i = 0; i < 6; i++) ctx.fillRect(625, 248 + i * 17, 210, 4 + i * 2)
-    ctx.strokeStyle = '#ff5ea5'
-    ctx.lineWidth = 3
-    for (let i = 0; i < 8; i++) {
-      const y = 382 + i * i * 2.7
-      ctx.beginPath()
-      ctx.moveTo(55, y)
-      ctx.lineTo(903, y)
-      ctx.stroke()
-    }
-    for (const edge of [-1, -0.5, 0.5, 1]) {
-      ctx.beginPath()
-      ctx.moveTo(480, 372)
-      ctx.lineTo(480 + 530 * edge, 580)
-      ctx.stroke()
-    }
-    ctx.fillStyle = '#6de9e3'
-    ctx.font = 'bold 27px monospace'
-    ctx.fillText('FIELD / XR WORLD ' + world.number, 52, 78)
-    ctx.fillStyle = '#fff2de'
-    ctx.font = 'bold 61px system-ui'
-    ctx.shadowColor = '#ff428e'
-    ctx.shadowBlur = focused ? 24 : 10
-    ctx.fillText(world.name, 52, 272, 805)
-    ctx.shadowBlur = 0
-    ctx.fillStyle = '#b6f8ef'
-    ctx.font = '31px system-ui'
-    ctx.fillText(world.subtitle, 53, 329, 780)
-    ctx.fillStyle = focused ? '#ffc27c' : '#82d4d0'
-    ctx.font = 'bold 27px monospace'
-    ctx.fillText(focused ? 'FRONT OF DECK  /  OPEN BELOW' : 'SELECT TO BRING FORWARD', 53, 555, 845)
+    ctx.fillStyle = '#172c30'
+    rounded(ctx, 675, 121, 172, 294, 82)
+    ctx.fill()
+    const horizon = ctx.createLinearGradient(0, 160, 0, 410)
+    horizon.addColorStop(0, '#e7b482')
+    horizon.addColorStop(0.5, '#ad816d')
+    horizon.addColorStop(1, '#41555a')
+    ctx.fillStyle = horizon
+    rounded(ctx, 697, 149, 127, 241, 62)
+    ctx.fill()
+    ctx.fillStyle = '#f8d3a0'
+    ctx.beginPath()
+    ctx.arc(760, 244, 38, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = '#263e40'
+    ctx.fillRect(698, 322, 126, 70)
+
+    const companion = world.experience === 'companion'
+    ctx.fillStyle = '#f0bf83'
+    ctx.font = 'bold 26px monospace'
+    ctx.fillText((companion ? 'XR COMPANION ' : 'IMMERSIVE WORLD ') + world.number, 54, 77)
+    ctx.fillStyle = '#f8f0dd'
+    ctx.font = 'bold 60px system-ui'
+    ctx.fillText(world.name, 52, 280, 790)
+    ctx.fillStyle = '#b8dbcf'
+    ctx.font = '30px system-ui'
+    ctx.fillText(world.subtitle, 54, 341, 790)
+    ctx.fillStyle = focused ? '#ffcf98' : '#a7d1bf'
+    ctx.font = 'bold 25px monospace'
+    ctx.fillText(focused ? 'SELECTED / OPEN BELOW' : 'SELECT TO BRING FORWARD', 54, 546, 810)
   })
-}
-
-function createOutrunBackdrop(group: THREE.Group) {
-  const lines: number[] = []
-  // A single inexpensive line-segment mesh forms the receding neon highway.
-  for (let i = 0; i <= 22; i++) {
-    const z = -0.55 - (i / 22) ** 1.55 * 16
-    lines.push(-11, -0.07, z, 11, -0.07, z)
-  }
-  for (let i = -12; i <= 12; i++) {
-    lines.push(0, -0.07, -16.5, i * 0.88, -0.07, -0.55)
-  }
-  const road = new THREE.BufferGeometry()
-  road.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3))
-  group.add(new THREE.LineSegments(road, new THREE.LineBasicMaterial({
-    color: '#ff4e9c', transparent: true, opacity: 0.62, depthWrite: false,
-  })))
-
-  const peaks: number[] = []
-  for (let i = 0; i < 18; i++) {
-    const x = -16.2 + i * 1.8
-    const height = 0.35 + ((i * 7) % 9) * 0.22
-    peaks.push(x, 0, -9.4, x + 0.9, height, -9.4, x + 1.8, 0, -9.4)
-  }
-  const mountains = new THREE.BufferGeometry()
-  mountains.setAttribute('position', new THREE.Float32BufferAttribute(peaks, 3))
-  group.add(new THREE.Mesh(mountains, new THREE.MeshBasicMaterial({
-    color: '#272751', side: THREE.DoubleSide, depthWrite: false,
-  })))
-
-  const canvas = document.createElement('canvas')
-  canvas.width = 512
-  canvas.height = 512
-  const ctx = canvas.getContext('2d')
-  if (ctx) {
-    const sun = ctx.createLinearGradient(0, 46, 0, 455)
-    sun.addColorStop(0, '#ffe6a1')
-    sun.addColorStop(0.45, '#ff9b76')
-    sun.addColorStop(1, '#eb398b')
-    ctx.fillStyle = sun
-    ctx.beginPath()
-    ctx.arc(256, 256, 207, 0, Math.PI * 2)
-    ctx.fill()
-    // Interrupted sunset bands: classic synthwave, procedurally painted.
-    ctx.globalCompositeOperation = 'destination-out'
-    for (let i = 0; i < 7; i++) {
-      ctx.fillRect(38, 276 + i * 23, 440, 3 + i * 3)
-    }
-    ctx.globalCompositeOperation = 'source-over'
-    const texture = new THREE.CanvasTexture(canvas)
-    texture.colorSpace = THREE.SRGBColorSpace
-    const sunPlane = plane(texture, 4.6, 4.6)
-    sunPlane.position.set(0, 2.2, -10)
-    group.add(sunPlane)
-  }
 }
 
 function headingTexture() {
@@ -220,7 +161,7 @@ function headingTexture() {
     ctx.fillText('Φ  PhiOS  XR', w / 2, 303)
     ctx.fillStyle = gold
     ctx.font = '32px monospace'
-    ctx.fillText('NEON HIGHWAY  /  ENTER THE FIELD', w / 2, 390)
+    ctx.fillText('THE PHI HEARTH  /  YOUR HOME BETWEEN WORLDS', w / 2, 390)
   })
 }
 
@@ -284,7 +225,7 @@ function plane(texture: THREE.Texture, width: number, height: number) {
 
 export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks): SpatialShell {
   const scene = new THREE.Scene()
-  scene.background = new THREE.Color('#060d19')
+  scene.background = new THREE.Color('#201d20')
   const workspace = new THREE.Group()
   scene.add(workspace)
   const camera = new THREE.PerspectiveCamera(65, 1, 0.05, 100)
@@ -303,20 +244,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
 
   const decor = new THREE.Group()
   workspace.add(decor)
-  createOutrunBackdrop(decor)
-
-  const points: number[] = []
-  for (let i = 0; i < 420; i++) {
-    const a = i * 2.399963
-    const r = 3.4 + (i % 29) * 0.22
-    points.push(Math.cos(a) * r, 0.6 + Math.sin(i * 17.31) * 4.7, -2.5 + Math.sin(a) * r)
-  }
-  const starGeo = new THREE.BufferGeometry()
-  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(points, 3))
-  decor.add(new THREE.Points(starGeo, new THREE.PointsMaterial({
-    color: '#8ad5ed', size: 0.022, sizeAttenuation: true,
-    transparent: true, opacity: 0.65,
-  })))
+  createCozyRoom(decor)
 
   const banner = plane(headingTexture(), 3.25, 1.12)
   banner.position.set(0, 3.11, -2.45)
@@ -362,7 +290,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   cards.forEach((_, index) => positionHandle(index))
 
   // The world deck focuses one generous card with two angled previews.
-  // Unlike the movable system portals, these five cards never alter saved layouts.
+  // Unlike the movable system portals, these destination cards never alter saved layouts.
   let deck = createDeck(vrWorlds.map((world) => world.id))
   const worldCards: THREE.Mesh[] = vrWorlds.map((world) => {
     const card = plane(vrCardTexture(world, world.id === deck.active), 1.68, 1.04)
@@ -393,7 +321,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   // WebXR renders the canvas, not the surrounding HTML; add in-headset controls.
   const controls = [
     { action: 'portals', label: 'PORTALS', hint: 'PROJECTS', y: 3.04 },
-    { action: 'worlds', label: 'VR WORLDS', hint: '5 DESTINATIONS', y: 2.67 },
+    { action: 'worlds', label: 'XR SHELF', hint: 'CHOOSE A DOOR', y: 2.67 },
     { action: 'tools', label: 'TOOLS', hint: 'LIVE APPS', y: 2.30 },
     { action: 'arc', label: 'ARC', hint: 'CURVED', y: 1.93 },
     { action: 'wall', label: 'WALL', hint: 'FLAT GRID', y: 1.56 },
@@ -440,7 +368,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   })
   // Explicit controller click on this button navigates the current Quest Browser tab.
   // Gaze selection alone can NEVER activate external navigation.
-  const openWorldPanel = plane(actionTexture('OPEN WORLD', 'LEAVE PHIOS XR'), 1.65, 0.42)
+  const openWorldPanel = plane(actionTexture('OPEN PORTAL', 'LEAVES THE HEARTH'), 1.65, 0.42)
   openWorldPanel.position.set(0, 0.47, -1.97)
   openWorldPanel.userData.action = 'launch-world'
   openWorldPanel.visible = false
@@ -1100,7 +1028,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       gaze = { target: null, since: 0, fired: false }
       gazeProgress = 0
       noteInput('SESSION ENDED')
-      scene.background = new THREE.Color('#060d19')
+      scene.background = new THREE.Color('#201d20')
       decor.visible = true
       workspace.position.set(0, 0, 0)
       workspace.rotation.set(0, 0, 0)
@@ -1110,7 +1038,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     })
     try {
       // WebXR AR requires a transparent scene background to expose passthrough.
-      scene.background = mode === 'immersive-ar' ? null : new THREE.Color('#060d19')
+      scene.background = mode === 'immersive-ar' ? null : new THREE.Color('#201d20')
       decor.visible = mode !== 'immersive-ar'
       await renderer.xr.setSession(session)
       input = { ...emptyDiagnostics(gazeEnabled), sourceCount: session.inputSources.length }
@@ -1119,7 +1047,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       callbacks.onSession(mode)
     } catch (error) {
       await session.end().catch(() => {})
-      scene.background = new THREE.Color('#060d19')
+      scene.background = new THREE.Color('#201d20')
       decor.visible = true
       throw error
     }

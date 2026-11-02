@@ -48,7 +48,7 @@ export function App() {
       secureContext: window.isSecureContext,
       webXRExposed: typeof navigator.xr !== 'undefined',
       support,
-      appRevision: 'edition-07',
+      appRevision: 'edition-11-phi-hearth',
       input: inputDiagnostics,
     }, new Date().toISOString()), null, 2)
   }
@@ -142,7 +142,7 @@ export function App() {
           <span className="identity-mark">Φ</span>
           <span className="identity-copy"><strong>PHIOS <em>XR</em></strong><small>THE SOVEREIGN SPATIAL SHELL</small></span>
         </a>
-        <div className="topbar-mid"><span className="status-pulse" /> NEON HIGHWAY <span className="divider">/</span> VR WORLD DECK</div>
+        <div className="topbar-mid"><span className="status-pulse" /> THE Φ HEARTH <span className="divider">/</span> VR WORLD DECK</div>
         <a className="source-link" href={GITHUB} target="_blank" rel="noopener noreferrer">SOURCE CODE <span aria-hidden="true">↗</span></a>
       </header>
 
@@ -150,7 +150,7 @@ export function App() {
         <aside className="rail">
           <div className="eyebrow"><span className="rail-index">01 /</span> SPATIAL INDEX</div>
           <h1>One system.<br/><i>Infinite rooms.</i></h1>
-          <p className="intro">One universe. Five doors. Spin the synthwave deck and enter your next world.</p>
+          <p className="intro">Come home between worlds. Settle into a warm, quiet room, then explore VR experiences and XR companions.</p>
           <div className="rail-caption">ACTIVE MODULES <span>06</span></div>
           <nav className="portal-nav" aria-label="Spatial portals">
             {portals.map((portal) => (
@@ -180,13 +180,13 @@ export function App() {
 
         <section className="stage-section" aria-label="Spatial environment">
           <div className="stage-topline">
-            <span><span className="small-cross">✳</span> Φ FIELDSPACE / NEON HIGHWAY</span>
+            <span><span className="small-cross">✳</span> Φ FIELDSPACE / THE Φ HEARTH</span>
             <span className="stage-top-right">WEBXR <span className="mini-badge">{sessionMode ? 'SESSION ACTIVE' : 'STANDBY'}</span></span>
           </div>
           <div className="stage" ref={stageRef}>
             {sceneError && <div className="render-error" role="alert">3D PREVIEW UNAVAILABLE<br/><small>{sceneError}. You can still use the portal index.</small></div>}
             <div className="stage-centerpiece" aria-hidden="true"><span>Φ</span></div>
-            <div className="stage-overlay-top" aria-hidden="true">OUTRUN / NEON HIGHWAY <span>///</span> WORLD DECK</div>
+            <div className="stage-overlay-top" aria-hidden="true">THE Φ HEARTH / LIVING ROOM <span>///</span> WORLD DECK</div>
             <div className="stage-overlay-bottom" aria-hidden="true">
               <span>◈ PICK / SHUFFLE / ENTER THE FIELD</span>
               <span>RENDERING / THREE.JS / WEBXR</span>
@@ -241,7 +241,7 @@ export function App() {
             </div>
           </div>
           {view === 'worlds' && <div className="vr-deck-controls" role="group" aria-label="VR deck controls">
-            <div><strong>THE NEON DECK</strong><small>CHOOSE YOUR NEXT REALITY · {vrWorlds.length} WORLDS</small></div>
+            <div><strong>THE HEARTH SHELF</strong><small>FIVE IMMERSIVE EXPERIENCES · {vrWorlds.length} TOTAL DOORS</small></div>
             <div className="vr-deck-actions">
               <button onClick={() => shellRef.current?.deckAction('previous')} aria-label="Previous VR world">◀ PREV</button>
               <button className="shuffle-button" onClick={() => shellRef.current?.deckAction('shuffle')} aria-label="Shuffle VR worlds">⤨ SHUFFLE</button>
@@ -252,10 +252,10 @@ export function App() {
             {vrWorlds.map((world) => (
               <a className="vr-world-direct-link" key={world.id}
                 href={world.href} target="_blank" rel="noopener noreferrer">
-                <strong>{world.name}</strong><small>{world.subtitle}</small><span aria-hidden="true">↗</span>
+                <strong>{world.name}</strong><small>{world.experience === 'companion' ? 'XR COMPANION · ' : 'VR WORLD · '}{world.subtitle}</small><span aria-hidden="true">↗</span>
               </a>
             ))}
-            <p>In VR, select a deck card, use PREV / SHUFFLE / NEXT, then trigger <strong>OPEN WORLD</strong>. This leaves PhiOS XR to launch that site's own VR mode. Gaze can select cards but never opens links automatically.</p>
+            <p>In VR, select a destination, use PREV / SHUFFLE / NEXT, then trigger <strong>OPEN PORTAL</strong>. This leaves the Hearth for an external site. Companion links are project demos, not certified immersive apps. Gaze never opens links automatically.</p>
           </div>}
           {view === 'tools' && <div className="field-tools-editor">
             <label className="field-pad-editor">
@@ -297,7 +297,7 @@ export function App() {
         </section>
 
         <aside className="inspector">
-          <div className="inspector-head"><span>{getVrWorld(selected.id) ? 'VR WORLD' : 'ACTIVE PORTAL'}</span><span className="inspector-count">{selected.number} / {getVrWorld(selected.id) ? String(vrWorlds.length).padStart(2, '0') : '06'}</span></div>
+          <div className="inspector-head"><span>{getVrWorld(selected.id)?.experience === 'companion' ? 'XR COMPANION' : getVrWorld(selected.id) ? 'VR WORLD' : 'ACTIVE PORTAL'}</span><span className="inspector-count">{selected.number} / {getVrWorld(selected.id) ? String(vrWorlds.length).padStart(2, '0') : '06'}</span></div>
           <div className="hero-glyph" aria-hidden="true"><div className="glyph-circles"><span>Φ</span></div><small>ACCESS / REVIEWED</small></div>
           <div className="inspector-main">
             <div className="inspector-overline">PORTAL {selected.number}  /  {selected.kind.toUpperCase()}</div>
@@ -305,7 +305,7 @@ export function App() {
             <div className="inspector-subtitle">{selected.subtitle}</div>
             <p>{selected.description}</p>
             <a className="open-portal" href={selected.href} target="_blank" rel="noopener noreferrer">
-              {getVrWorld(selected.id) ? 'OPEN VR WORLD' : 'OPEN EXTERNAL PROJECT'} <span aria-hidden="true">↗</span>
+              {getVrWorld(selected.id)?.experience === 'companion' ? 'OPEN XR COMPANION' : getVrWorld(selected.id) ? 'OPEN VR WORLD' : 'OPEN EXTERNAL PROJECT'} <span aria-hidden="true">↗</span>
             </a>
           </div>
           <div className="inspector-foot">

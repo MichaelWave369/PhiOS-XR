@@ -138,3 +138,27 @@
 @media(max-width:950px){.vr-deck-controls{flex-direction:column;align-items:stretch}.vr-deck-actions button{flex:1}.vr-deck-actions{justify-content:stretch}}
 @media(max-width:400px){.vr-deck-actions button{min-width:0;padding:9px 7px;font-size:10px}}
 @media(prefers-reduced-motion:reduce){.vr-worlds-active *{transition:none!important}}
+
+
+/* Edition 11: Hearth palette. The 2D companion stays accessible on mobile. */
+.vr-worlds-active{background:#11191b}
+.vr-worlds-active .topbar{background:#152024;border-color:#5e5142}
+.vr-worlds-active .rail{background:linear-gradient(165deg,#1b3030,#152022);border-color:#655744}
+.vr-worlds-active .rail h1 i{color:#f0ce9b}
+.vr-worlds-active .intro{color:#bdd1c6}
+.vr-worlds-active .portal-link.active{background:linear-gradient(90deg,#354c44,#273631);border-color:#9b8460;box-shadow:inset 3px 0 #e5bf83}
+.vr-worlds-active .stage{background:radial-gradient(circle at 50% 35%,#6c5340 0%,#293c3a 55%,#171c22 100%);border-color:#806a4d}
+.vr-worlds-active .stage-overlay-top span{color:#f3cd96}
+.vr-worlds-active .transport{background:#243733;border-color:#806a4d}
+.vr-worlds-active .transport-text strong{color:#f2d6ae}
+.vr-worlds-active .vr-deck-controls{background:linear-gradient(110deg,#394b42,#263a38);border-color:#a68a61}
+.vr-worlds-active .vr-deck-controls strong{color:#f8d7a5}
+.vr-worlds-active .vr-deck-actions .shuffle-button{background:#be9770;color:#182322;border-color:#eac899}
+.vr-worlds-active .vr-world-links{background:#172b2b;border-color:#78694e}
+.vr-worlds-active .vr-world-direct-link{background:linear-gradient(140deg,#354942,#1c3334);border-color:#6d836d}
+.vr-worlds-active .vr-world-direct-link:hover{background:#405c50;border-color:#dcb784}
+.vr-worlds-active .inspector{background:linear-gradient(160deg,#1d3333,#132628);border-color:#625b49}
+.vr-worlds-active .open-portal{background:#34584b;border-color:#b39565;color:#f8e8c8}
+.vr-worlds-active .open-portal:hover{background:#427361}
+.vr-worlds-active .layout-action.is-active{background:#456251;border-color:#ddc18f;color:#fff4d9}
+.vr-worlds-active .footer{background:#111c1d;border-color:#615342}
