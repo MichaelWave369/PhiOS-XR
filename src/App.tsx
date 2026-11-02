@@ -6,6 +6,7 @@ import { createSpatialShell, type ClockDisplay, type SpatialShell, type ViewMode
 import { MAX_NOTE_CHARS } from './fieldtools'
 import { HEARTH_MOODS, HEARTH_MOOD_STYLES, type HearthMood } from './hearth-mood'
 import { HEARTH_ARTWORKS, HEARTH_ART_DETAILS, type HearthArtwork } from './hearth-gallery'
+import { loadPersonalArt, preparePersonalArt, removePersonalArt, savePersonalArt } from './personal-art'
 import { emptyDiagnostics, type XRInputDiagnostics } from './xr-input'
 import { QUEST_CHECKS, QUEST_STORAGE_KEY, buildQuestExport, createQuestReport, decodeQuestReport, questCounts, recordQuestEvent, type QuestStatus } from './questlab'
 
@@ -14,11 +15,16 @@ const GITHUB = 'https://github.com/MichaelWave369/PhiOS-XR'
 export function App() {
   const stageRef = useRef<HTMLDivElement>(null)
   const shellRef = useRef<SpatialShell | null>(null)
+  const personalRevision = useRef(0)
   const [selectedId, setSelectedId] = useState('domistika-xr')
   const [layout, setLayout] = useState<LayoutPreset>('arc')
   const [view, setView] = useState<ViewMode>('worlds')
   const [mood, setMood] = useState<HearthMood>('fireside')
   const [artwork, setArtwork] = useState<HearthArtwork>('golden-spiral')
+  const [personalName, setPersonalName] = useState<string | null>(null)
+  const [personalActive, setPersonalActive] = useState(false)
+  const [personalBusy, setPersonalBusy] = useState(false)
+  const [personalNotice, setPersonalNotice] = useState('')
   const [fieldNote, setFieldNote] = useState('')
   const [clockDisplay, setClockDisplay] = useState<ClockDisplay>({ time: '00:00', running: false })
   const [support, setSupport] = useState<XRAvailability | null>(null)
@@ -104,9 +110,18 @@ export function App() {
         onClock: setClockDisplay,
         onMood: setMood,
         onArtwork: setArtwork,
+        onPersonalArt: (active) => setPersonalActive(active),
         onInput: setInputDiagnostics,
       })
       shellRef.current = shell
+      const loadRevision = personalRevision.current
+      void loadPersonalArt().then(async (record) => {
+        if (!record || cancelled || personalRevision.current !== loadRevision) return
+        const prepared = await preparePersonalArt(record.image, record.name)
+        if (cancelled || personalRevision.current !== loadRevision) return
+        shell.setPersonalArtwork(prepared.canvas, false)
+        setPersonalName(prepared.name)
+      }).catch(() => { /* local storage may be disabled; standard gallery still works */ })
     } catch (err) {
       setSceneError(err instanceof Error ? err.message : 'Unable to create the 3D view.')
     }
@@ -119,6 +134,45 @@ export function App() {
       shellRef.current = null
     }
   }, [])
+
+  async function importPersonalImage(file: File | undefined) {
+    if (!file) return
+    personalRevision.current++
+    setPersonalBusy(true)
+    setPersonalNotice('')
+    try {
+      const prepared = await preparePersonalArt(file, file.name)
+      // Show the image in the current session even if persistent storage is blocked.
+      shellRef.current?.setPersonalArtwork(prepared.canvas, true)
+      setPersonalName(prepared.name)
+      try {
+        await savePersonalArt(prepared)
+        setPersonalNotice('Saved locally in this browser. Switch to MY ART in the Hearth gallery.')
+      } catch {
+        setPersonalNotice('Showing for this session only. Browser gallery storage is unavailable.')
+      }
+    } catch (error) {
+      setPersonalNotice(error instanceof Error ? error.message : 'Could not load this image.')
+    } finally {
+      setPersonalBusy(false)
+    }
+  }
+
+  async function clearPersonalImage() {
+    if (!personalName || !window.confirm('Remove the locally saved Hearth painting from this browser?')) return
+    personalRevision.current++
+    setPersonalBusy(true)
+    try {
+      await removePersonalArt()
+      shellRef.current?.setPersonalArtwork(null, false)
+      setPersonalName(null)
+      setPersonalNotice('Local artwork removed. Your original Domistika export is untouched.')
+    } catch {
+      setPersonalNotice('Unable to remove the saved artwork; check browser storage permissions.')
+    } finally {
+      setPersonalBusy(false)
+    }
+  }
 
   async function enter(mode: ImmersiveMode) {
     setError('')
@@ -242,12 +296,34 @@ export function App() {
             <div className="hearth-art-actions">
               {HEARTH_ARTWORKS.map((option) => (
                 <button key={option} type="button"
-                  className={artwork === option ? 'is-active' : ''}
-                  aria-pressed={artwork === option}
+                  className={artwork === option && !personalActive ? 'is-active' : ''}
+                  aria-pressed={artwork === option && !personalActive}
                   onClick={() => shellRef.current?.setArtwork(option)}>
                   {HEARTH_ART_DETAILS[option].label}
                 </button>
               ))}
+            </div>
+            <div className="personal-gallery-controls">
+              <label className="personal-gallery-import">
+                IMPORT DOMISTIKA PNG
+                <input type="file" accept="image/png,image/jpeg,image/webp"
+                  disabled={personalBusy} aria-label="Import an exported Domistika painting as PNG, JPEG or WebP"
+                  onChange={(event) => {
+                    const file = event.currentTarget.files?.[0]
+                    event.currentTarget.value = ''
+                    void importPersonalImage(file)
+                  }} />
+              </label>
+              {personalName && <>
+                <button type="button" disabled={personalBusy} className={personalActive ? 'is-active' : ''}
+                  aria-pressed={personalActive} onClick={() => shellRef.current?.showPersonalArtwork()}>
+                  MY ART: {personalName}
+                </button>
+                <button type="button" disabled={personalBusy} className="personal-gallery-remove"
+                  onClick={() => void clearPersonalImage()}>REMOVE LOCAL COPY</button>
+              </>}
+              <span role="status" aria-live="polite">{personalBusy ? 'Preparing artwork locally…' : personalNotice}</span>
+              <small>One personal slot, 8 MB input max. Nothing uploads. This browser's local art is not shared with other devices.</small>
             </div>
           </div>
           <div className="xr-assist-options">

@@ -1,7 +1,8 @@
 import * as THREE from 'three'
 import { createCozyRoom, applyCozyRoomMood } from './cozy-room'
 import { HEARTH_MOOD_STYLES, nextHearthMood, readHearthMood, writeHearthMood, type HearthMood } from './hearth-mood'
-import { HEARTH_ART_DETAILS, nextHearthArtwork, readHearthArtwork, setHearthGalleryArt, writeHearthArtwork, type HearthArtwork } from './hearth-gallery'
+import { readPersonalArtMode, writePersonalArtMode } from './personal-art'
+import { HEARTH_ARTWORKS, HEARTH_ART_DETAILS, nextHearthArtwork, readHearthArtwork, setHearthGalleryArt, setHearthGalleryPersonalArt, writeHearthArtwork, type HearthArtwork } from './hearth-gallery'
 import { getPortal, getVrWorld, portals, vrWorlds, type Portal } from './catalog'
 import { createDeck, deckSlots, selectDeck, shuffleDeck, stepDeck } from './vr-deck'
 import type { ImmersiveMode } from './capabilities'
@@ -26,6 +27,8 @@ export type SpatialShell = {
   deckAction: (action: 'previous' | 'next' | 'shuffle') => void
   setMood: (mood: HearthMood) => void
   setArtwork: (artwork: HearthArtwork) => void
+  setPersonalArtwork: (canvas: HTMLCanvasElement | null, makeActive: boolean) => void
+  showPersonalArtwork: () => void
   dispose: () => void
 }
 
@@ -38,6 +41,7 @@ type ShellCallbacks = {
   onClock: (state: ClockDisplay) => void
   onMood: (mood: HearthMood) => void
   onArtwork: (artwork: HearthArtwork) => void
+  onPersonalArt: (active: boolean, available: boolean) => void
   onInput?: (snapshot: XRInputDiagnostics) => void
 }
 
@@ -257,6 +261,8 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   applyCozyRoomMood(decor, mood)
   let artwork: HearthArtwork = readHearthArtwork(moodStorage)
   setHearthGalleryArt(decor, artwork)
+  let personalCanvas: HTMLCanvasElement | null = null
+  let personalActive = false
   scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
 
   const banner = plane(headingTexture(), 3.25, 1.12)
@@ -400,16 +406,56 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   artworkPanel.visible = false
   workspace.add(artworkPanel)
 
-  function setArtwork(next: HearthArtwork) {
-    if (next === artwork) return
-    artwork = next
-    setHearthGalleryArt(decor, artwork)
+  function repaintArtworkLabel() {
     const material = artworkPanel.material as THREE.MeshBasicMaterial
     material.map?.dispose()
-    material.map = actionTexture('ART', HEARTH_ART_DETAILS[artwork].label.toUpperCase())
+    material.map = actionTexture('ART', personalActive ? 'MY ART' : HEARTH_ART_DETAILS[artwork].label.toUpperCase())
     material.needsUpdate = true
+  }
+  function setArtwork(next: HearthArtwork) {
+    if (next === artwork && !personalActive) return
+    artwork = next
+    personalActive = false
+    setHearthGalleryArt(decor, artwork)
+    repaintArtworkLabel()
     writeHearthArtwork(moodStorage, artwork)
+    writePersonalArtMode(moodStorage, 'curated')
     callbacks.onArtwork(artwork)
+    callbacks.onPersonalArt(false, Boolean(personalCanvas))
+  }
+  function showPersonalArtwork() {
+    if (!personalCanvas) return
+    personalActive = true
+    setHearthGalleryPersonalArt(decor, personalCanvas)
+    repaintArtworkLabel()
+    writePersonalArtMode(moodStorage, 'personal')
+    callbacks.onPersonalArt(true, true)
+  }
+  function setPersonalArtwork(canvas: HTMLCanvasElement | null, makeActive: boolean) {
+    personalCanvas = canvas
+    if (!canvas) {
+      personalActive = false
+      setHearthGalleryArt(decor, artwork)
+      repaintArtworkLabel()
+      writePersonalArtMode(moodStorage, 'curated')
+      callbacks.onPersonalArt(false, false)
+      return
+    }
+    // Fresh imports select My Art; restored images obey the stored viewing mode.
+    if (makeActive || readPersonalArtMode(moodStorage) === 'personal') {
+      showPersonalArtwork()
+    } else {
+      callbacks.onPersonalArt(false, true)
+    }
+  }
+  function cycleArtwork() {
+    if (personalActive) {
+      setArtwork(HEARTH_ARTWORKS[0])
+    } else if (artwork === HEARTH_ARTWORKS[HEARTH_ARTWORKS.length - 1] && personalCanvas) {
+      showPersonalArtwork()
+    } else {
+      setArtwork(nextHearthArtwork(artwork))
+    }
   }
 
   function setMood(next: HearthMood) {
@@ -811,7 +857,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     else if (action === 'portals') setView('portals')
     else if (action === 'worlds') setView('worlds')
     else if (action === 'mood') setMood(nextHearthMood(mood))
-    else if (action === 'art') setArtwork(nextHearthArtwork(artwork))
+    else if (action === 'art') cycleArtwork()
     else if (action === 'deck-prev' && view === 'worlds') deckAction('previous')
     else if (action === 'deck-next' && view === 'worlds') deckAction('next')
     else if (action === 'deck-shuffle' && view === 'worlds') deckAction('shuffle')
@@ -1139,5 +1185,6 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   callbacks.onClock({ time: lastClockText, running: false })
   callbacks.onMood(mood)
   callbacks.onArtwork(artwork)
-  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, deckAction, setMood, setArtwork, dispose }
+  callbacks.onPersonalArt(false, false)
+  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, deckAction, setMood, setArtwork, setPersonalArtwork, showPersonalArtwork, dispose }
 }

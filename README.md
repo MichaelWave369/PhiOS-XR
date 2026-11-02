@@ -65,6 +65,16 @@ Gallery controls are in the accessible browser interface and as the new **ART** 
 
 Quest hardware acceptance: verify artwork is legible from seated and standing viewpoints; select all three gallery styles using 2D buttons, controller selection and safe gaze; check the ART and OPEN PORTAL targets are distinct and do not cause unintended navigation; confirm VR and MR entry/exit, local preference persistence, and acceptable frame rate.
 
+## Edition 14: Domistika-to-Hearth personal art (single local slot)
+
+**Domistika XR already supports Export PNG** for flat-canvas/easel paintings. Export a PNG at [Domistika XR](https://michaelwave369.github.io/Domistika/xr.html), then open the [PhiOS XR Hearth](https://michaelwave369.github.io/PhiOS-XR/), choose **IMPORT DOMISTIKA PNG**, and pick that local exported file. JPEG and WebP raster images are also accepted. The file is magic-byte checked, input-limited to 8 MB and 32 megapixels, rendered with preserved aspect ratio onto a 1024×768 neutral matte, and saved only as a prepared PNG in this browser's IndexedDB when storage is available. Untrusted SVG, HTML, file URLs and project JSON are not accepted.
+
+**One personal-art slot** can be shown as **MY ART** alongside the original Golden Spiral / Field Stars / Living Bloom choices. The immersive **ART** control cycles the original choices plus MY ART if you have imported one. Its trigger and safe gaze dwell change only the picture; **external navigation still requires explicit OPEN PORTAL**. IMPORT and REMOVE actions remain visible 2D file controls, which cannot silently open device files from a headset XR session. No automatic cloud sync, import from another origin, server upload, Domistika JSON editing, 3D GLB preview, or transfer between desktop and Quest is claimed.
+
+The file-picker import displays the art even if IndexedDB is blocked (session only); when persistence succeeds it restores across browser visits on the **same origin and device**. To remove PhiOS XR's local copy, use **REMOVE LOCAL COPY** after confirming; the original Domistika PNG is never altered. The gallery remains hidden in MR passthrough and image texture replacement disposes old GPU textures.
+
+**Quest acceptance checklist:** export one Domistika painting to PNG and explicitly import it through Quest Browser's normal file picker *outside immersive mode*, then enter VR and confirm MY ART appears in the wall frame. Cycle ART from a controller and gaze; verify frame visibility, no inadvertent OPEN PORTAL activation, MR passthrough, seated/standing comfort, and same-device reloading. Desktop imports do not appear automatically on Quest because browsers and devices do not share storage. CI cannot certify physical Quest behavior.
+
 ## Quest 3 testing
 
 1. Use the GitHub Pages deployment at `https://michaelwave369.github.io/PhiOS-XR/` **after** the deployment workflow has succeeded and GitHub Pages is configured for **GitHub Actions**.

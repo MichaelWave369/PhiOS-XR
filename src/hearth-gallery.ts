@@ -155,12 +155,23 @@ export function makeHearthArtTexture(art: HearthArtwork): THREE.CanvasTexture {
 }
 
 /** Swaps only the painting's texture; does not rebuild the room or change input. */
-export function setHearthGalleryArt(room: THREE.Group, art: HearthArtwork): void {
+export function setHearthGalleryTexture(room: THREE.Group, next: THREE.Texture): void {
   const painting = room.getObjectByName('hearth-gallery-painting')
-  if (!(painting instanceof THREE.Mesh) || !(painting.material instanceof THREE.MeshBasicMaterial)) return
-  const next = makeHearthArtTexture(art)
+  if (!(painting instanceof THREE.Mesh) || !(painting.material instanceof THREE.MeshBasicMaterial)) {
+    next.dispose()
+    return
+  }
   const previous = painting.material.map
   painting.material.map = next
   painting.material.needsUpdate = true
   previous?.dispose()
+}
+export function setHearthGalleryPersonalArt(room: THREE.Group, canvas: HTMLCanvasElement): void {
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.anisotropy = 4
+  setHearthGalleryTexture(room, texture)
+}
+export function setHearthGalleryArt(room: THREE.Group, art: HearthArtwork): void {
+  setHearthGalleryTexture(room, makeHearthArtTexture(art))
 }
