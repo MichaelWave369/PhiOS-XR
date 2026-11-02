@@ -228,7 +228,7 @@ function plane(texture: THREE.Texture, width: number, height: number) {
 
 export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks): SpatialShell {
   const scene = new THREE.Scene()
-  scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
+  scene.background = new THREE.Color(HEARTH_MOOD_STYLES.fireside.background)
   const workspace = new THREE.Group()
   scene.add(workspace)
   const camera = new THREE.PerspectiveCamera(65, 1, 0.05, 100)
@@ -248,7 +248,9 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   const decor = new THREE.Group()
   workspace.add(decor)
   createCozyRoom(decor)
-  let mood: HearthMood = readHearthMood(window.localStorage)
+  // Access to localStorage itself can throw in privacy-restricted browsers.
+  const moodStorage = (() => { try { return window.localStorage } catch { return null } })()
+  let mood: HearthMood = readHearthMood(moodStorage)
   applyCozyRoomMood(decor, mood)
   scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
 
@@ -396,7 +398,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     material.map?.dispose()
     material.map = actionTexture('MOOD', HEARTH_MOOD_STYLES[mood].label.toUpperCase())
     material.needsUpdate = true
-    writeHearthMood(window.localStorage, mood)
+    writeHearthMood(moodStorage, mood)
     callbacks.onMood(mood)
   }
 
