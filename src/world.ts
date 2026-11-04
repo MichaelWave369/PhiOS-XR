@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { createXRFrameObserver, type XRFrameReport } from './xr-frame-observer'
 import { createCozyRoom, applyCozyRoomMood } from './cozy-room'
 import { createGalleryRoom, GALLERY_EXHIBIT_COUNT } from './gallery-room'
 import { resolveGalleryRoomExhibits } from './gallery-room-model'
@@ -17,6 +18,8 @@ export type ViewMode = 'portals' | 'tools' | 'worlds' | 'gallery'
 export type ClockDisplay = { time: string; running: boolean }
 
 export type SpatialShell = {
+  setFrameSampling: (enabled: boolean) => void
+  getFrameReport: () => XRFrameReport
   enter: (mode: ImmersiveMode) => Promise<void>
   select: (id: string) => void
   recenter: () => void
@@ -247,6 +250,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   camera.lookAt(0, 1.45, -2.5)
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
+  const frameObserver = createXRFrameObserver()
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.7))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -1157,6 +1161,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   }
 
   renderer.setAnimationLoop((time) => {
+    frameObserver.sample(time, renderer.xr.isPresenting)
     // Static, low-motion room geometry avoids per-frame scene animation.
     const displayTime = formatClock(elapsedClock(clock, time))
     if (displayTime !== lastClockText) {
@@ -1314,5 +1319,5 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   callbacks.onMood(mood)
   callbacks.onArtwork(artwork)
   callbacks.onPersonalArt(null)
-  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, deckAction, setMood, setArtwork, registerPersonalArtwork, removePersonalArtwork, showPersonalArtwork, dispose }
+  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, deckAction, setMood, setArtwork, registerPersonalArtwork, removePersonalArtwork, showPersonalArtwork, setFrameSampling: frameObserver.setEnabled, getFrameReport: frameObserver.report, dispose }
 }

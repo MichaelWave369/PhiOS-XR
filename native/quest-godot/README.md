@@ -35,4 +35,8 @@ Official guidance: [Godot Android XR deployment](https://docs.godotengine.org/en
 - Quest: render through OpenXR when initialized. Trigger and gaze input are implemented in source, but pose reliability, controller support, passthrough and app lifecycle are **NOT_TESTED** on device.
 - Edition 09 diagnostics / hardware checklist: [Native Quest input guide](../../docs/EDITION_09.md).
 
+## GPU Observatory (native opt-in Rung 1)
+
+Press **G** using the keyboard in the native desktop/editor preview (or an attached keyboard) to toggle a small GPU capability line in the in-world status readout. Godot's RenderingServer reports the renderer adapter name and Performance exposes an **engine-reported** FPS hint. These values are not CUDA/Tensor throughput, VRAM, compositor timing or GPU execution time. The native Quest controller-only path has no GPU button in this rung, and cannot claim a headset measurement until device testing. No privilege, driver modification, storage, telemetry or upload.
+
 The user must retain a clear play boundary; this prototype is not a passthrough safety application. Keep every portal read-only until a capability-gated native bridge is designed and reviewed.
