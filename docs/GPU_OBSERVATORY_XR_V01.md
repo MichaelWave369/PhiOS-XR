@@ -10,3 +10,7 @@ The web XR Hearth and Quest Device Lab offer a manually armed, bounded read-only
 - Hardware acceptance still requires real Quest 3 testing, seated and standing, and a clear safe boundary.
 
 Next research rung: vendor-supported `XRFrame` timing fields where exposed and trustworthy, renderer stats, JS main-thread profiling, thermal headroom and repeatable 72/90 Hz comfort tests. Never infer measured GPU throughput from callback pacing.
+
+## Native Godot Quest proof-of-concept
+
+The parallel Godot native shell has a manual G-key capability view with only Godot-provided adapter label and engine FPS hint; headset controllers do **not** activate this view in v0.1. The headless CI structural test confirms read-only schema and no fabricated throughput, but does not prove actual Quest 3 device support.

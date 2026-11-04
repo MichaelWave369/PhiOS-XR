@@ -3,6 +3,7 @@ extends Node3D
 # Edition 06 native OpenXR proof-of-concept: local, read-only spatial index.
 # Does not embed the WebXR site, install another OS, or execute portal links.
 const PortalCatalog = preload("res://scripts/portal_catalog.gd")
+const GpuObserver = preload("res://scripts/gpu_observer.gd")
 const PANEL_WIDTH := 0.82
 const PANEL_HEIGHT := 0.56
 const PANEL_DEPTH := 0.035
@@ -17,6 +18,7 @@ var selected_index := 0
 var detail_label: Label3D
 var status_label: Label3D
 var xr_active := false
+var gpu_info_requested := false
 var anchor_frames := 0
 # Local-only controller evidence. No account IDs, analytics, or outbound calls.
 var controller_presses := 0
@@ -102,9 +104,12 @@ func _on_tracking_changed(tracked: bool, hand: String) -> void:
 func _input_status() -> String:
     var left := "L:" + ("TRACK" if left_hand.get_has_tracking_data() else "NONE")
     var right := "R:" + ("TRACK" if right_hand.get_has_tracking_data() else "NONE")
-    return "%s  %s  PRESS:%d  HIT:%d  GAZE:%d%%\nLAST:%s" % [
+    var status := "%s  %s  PRESS:%d  HIT:%d  GAZE:%d%%\nLAST:%s" % [
         left, right, controller_presses, controller_hits, gaze_progress, last_input
     ]
+    if gpu_info_requested:
+        status += "\n" + GpuObserver.status_line()
+    return status
 
 
 func _process_gaze() -> void:
@@ -143,6 +148,10 @@ func _unhandled_input(event: InputEvent) -> void:
             _select((selected_index + PortalCatalog.PORTALS.size() - 1) % PortalCatalog.PORTALS.size())
         elif event.keycode == KEY_R:
             _place_in_front()
+        elif event.keycode == KEY_G:
+            # Voluntary read-only view. No device tuning or continuous monitor.
+            gpu_info_requested = not gpu_info_requested
+            status_label.text = _input_status()
     if not xr_active and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
         var point := get_viewport().get_mouse_position()
         _pick(xr_camera.project_ray_origin(point), xr_camera.project_ray_origin(point) + xr_camera.project_ray_normal(point) * 10.0)
