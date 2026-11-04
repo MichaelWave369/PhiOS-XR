@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import FieldCompanionReceiver from './FieldCompanionReceiver'
 import { detectXRSupport, type ImmersiveMode, type XRAvailability } from './capabilities'
+import type { XRFrameReport } from './xr-frame-observer'
 import { getPortal, getVrWorld, portals, vrWorlds } from './catalog'
 import type { LayoutPreset } from './workspace'
 import { createSpatialShell, type ClockDisplay, type SpatialShell, type ViewMode } from './world'
@@ -30,6 +31,8 @@ export function App() {
   const [clockDisplay, setClockDisplay] = useState<ClockDisplay>({ time: '00:00', running: false })
   const [support, setSupport] = useState<XRAvailability | null>(null)
   const [sessionMode, setSessionMode] = useState<ImmersiveMode | null>(null)
+  const [frameSampling, setFrameSampling] = useState(false)
+  const [frameReport, setFrameReport] = useState<XRFrameReport | null>(null)
   const [gazeAssist, setGazeAssist] = useState(true)
   const [inputDiagnostics, setInputDiagnostics] = useState<XRInputDiagnostics>(emptyDiagnostics)
   const [error, setError] = useState('')
@@ -86,6 +89,24 @@ export function App() {
       setQuestNotice('JSON copied to clipboard. Review notes before sharing.')
     } catch {
       setQuestNotice('Clipboard access denied. Try DOWNLOAD JSON after exiting XR.')
+    }
+  }
+
+  function toggleFrameSampling() {
+    const shell = shellRef.current
+    if (!shell) {
+      setFrameReport(null)
+      setQuestNotice('Cannot observe frames: the spatial scene is unavailable.')
+      return
+    }
+    if (frameSampling) {
+      shell.setFrameSampling(false)
+      setFrameReport(shell.getFrameReport())
+      setFrameSampling(false)
+    } else {
+      shell.setFrameSampling(true)
+      setFrameReport(null)
+      setFrameSampling(true)
     }
   }
 
@@ -503,6 +524,24 @@ export function App() {
               <span>COMPLETED SELECTS: <b>{inputDiagnostics.selects}</b></span>
               <span>LAST INPUT: <b>{inputDiagnostics.lastEvent}</b></span>
             </div>
+            <div className="quest-lab-actions" aria-label="GPU Observatory render callback cadence">
+              <button type="button" onClick={toggleFrameSampling}>
+                {frameSampling ? 'STOP XR FRAME SAMPLE' : 'START XR FRAME SAMPLE'}
+              </button>
+              <span role="status" aria-live="polite">
+                {frameSampling ? 'Armed. Enter VR/MR to collect up to 240 frame intervals, then stop.'
+                  : frameReport?.status === 'observed'
+                    ? 'XR render callbacks: ' + frameReport.sample_count + ' intervals · median '
+                      + frameReport.median_interval_ms + ' ms · p95 '
+                      + frameReport.p95_interval_ms + ' ms'
+                    : frameReport ? 'No immersive frames captured.' : 'Not sampled. Opt-in only.'}
+              </span>
+            </div>
+            <p className="quest-fineprint">
+              GPU Observatory: browser render callback intervals only, <strong>not GPU execution time</strong>,
+              compositor timing, guaranteed refresh rate or Quest hardware certification. No sampling until
+              START; no upload, privilege, driver change or clock adjustment.
+            </p>
             <div className="quest-device-fields">
               <label>HEADSET MODEL<input maxLength={80} value={questReport.deviceModel} placeholder="e.g. Quest 3" onChange={(event) => updateQuestField('deviceModel', event.target.value)} /></label>
               <label>FIRMWARE VERSION<input maxLength={80} value={questReport.firmware} placeholder="Read from headset settings" onChange={(event) => updateQuestField('firmware', event.target.value)} /></label>
