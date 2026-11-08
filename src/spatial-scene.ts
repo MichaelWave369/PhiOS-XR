@@ -95,12 +95,18 @@ function metadata(v: unknown): SpatialMetadata {
     method:text(v.method,240,'method'),
   }
 }
+function sameCoordinates(v: unknown): boolean {
+  return exact(v,['handedness','upAxis','unit','origin']) &&
+    v.handedness === SCENE_COORDINATES.handedness &&
+    v.upAxis === SCENE_COORDINATES.upAxis &&
+    v.unit === SCENE_COORDINATES.unit &&
+    v.origin === SCENE_COORDINATES.origin
+}
 export function normalizeSpatialScene(v: unknown): SpatialScene {
   if (!exact(v,['schema','truth','creator','title','coordinateFrame','nodes']) ||
       v.schema !== SCENE_SCHEMA || v.truth !== SCENE_TRUTH ||
       typeof v.creator !== 'string' || !/^[a-z][a-z0-9-]{1,47}$/.test(v.creator) ||
-      !exact(v.coordinateFrame,['handedness','upAxis','unit','origin']) ||
-      Object.keys(SCENE_COORDINATES).some(k => v.coordinateFrame[k] !== SCENE_COORDINATES[k]) ||
+      !sameCoordinates(v.coordinateFrame) ||
       !Array.isArray(v.nodes) || v.nodes.length > MAX_SCENE_NODES) {
     throw new TypeError('Invalid passive scene schema, provenance label or coordinate frame')
   }

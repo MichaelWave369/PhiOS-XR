@@ -37,7 +37,7 @@ describe('PhiSpatial R6 passive scene consumer',()=>{
     expect(()=>normalizeSpatialScene(a)).toThrow()
   })
   it('refuses forged truth claims and noncanonical coordinate frames',()=>{
-    const a=fixture()
+    const a=fixture() as any
     a.truth='CERTIFIED_VALIDATED'
     expect(()=>normalizeSpatialScene(a)).toThrow()
     a.truth=SCENE_TRUTH;a.coordinateFrame.upAxis='Z'
