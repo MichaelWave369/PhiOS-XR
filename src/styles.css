@@ -227,3 +227,24 @@
 .hearth-room-switch-actions button.is-active{background:#dcbb86;color:#172c26;border-color:#fff0ca}
 .hearth-room-switch-actions button:focus-visible{outline:3px solid #f6d7a1;outline-offset:2px}
 @media(max-width:750px){.hearth-room-switch-actions{width:100%}.hearth-room-switch-actions button{flex:1}}
+
+
+/* Rung 7: explicit local passive hologram import. */
+.spatial-interchange{display:grid;gap:10px;padding:18px;background:linear-gradient(120deg,#102f36,#14233b);border:1px solid #468989;border-top:0;color:#d7f3ed}
+.spatial-interchange-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px}
+.spatial-interchange-header strong{font:750 13px system-ui;letter-spacing:.08em;color:#9ff0df}
+.spatial-interchange-header small,.spatial-interchange>small{font:11px/1.65 system-ui;color:#a7c7c7}
+.spatial-interchange p{margin:0;font:12px/1.65 system-ui;color:#b7d2d6}
+.spatial-scene-import{display:grid;gap:9px;font:700 10px system-ui;letter-spacing:.09em;color:#b5e4de}
+.spatial-scene-import input{padding:9px;border:1px solid #4e8c87;border-radius:6px;max-width:100%;background:#102831;color:#e6f5f1}
+.spatial-interchange button{min-height:40px;border:1px solid #7fb8ab;border-radius:6px;background:#22554f;color:#eafff9;padding:9px 12px;font:700 11px system-ui;justify-self:start}
+.spatial-interchange button:disabled{opacity:.4;cursor:not-allowed}
+.spatial-interchange button:focus-visible,.spatial-interchange select:focus-visible{outline:3px solid #a2ffdf;outline-offset:3px}
+.spatial-interchange .spatial-clear{background:transparent;color:#c3e9e6}
+.spatial-interchange-preview,.spatial-node-detail{border:1px solid #65878e;border-radius:7px;padding:12px;display:grid;gap:9px;background:#0b202c}
+.spatial-interchange-preview span{font:11px/1.5 ui-monospace,monospace;color:#b2ccd8}
+.spatial-node-detail label{font:700 10px system-ui;letter-spacing:.1em;color:#a4d4de}
+.spatial-node-detail select{background:#173641;border:1px solid #699a9b;border-radius:5px;padding:10px;color:#fff;max-width:100%}
+.spatial-node-data{display:grid;gap:6px;overflow-wrap:anywhere}
+.spatial-node-data strong{color:#d8b7ff;font:700 11px system-ui}
+.spatial-interchange-status{color:#a8eedb!important}

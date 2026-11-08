@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import FieldCompanionReceiver from './FieldCompanionReceiver'
+import {SpatialScenePanel} from './SpatialScenePanel'
 import { detectXRSupport, type ImmersiveMode, type XRAvailability } from './capabilities'
 import type { XRFrameReport } from './xr-frame-observer'
 import { getPortal, getVrWorld, portals, vrWorlds } from './catalog'
@@ -397,6 +398,12 @@ export function App() {
               <small>One picture displayed at a time; up to six stored in this browser. In VR, ART cycles all three built-ins and the imported paintings. No network uploads.</small>
             </div>
           </div>
+          <SpatialScenePanel onPreview={(scene) => {
+            const shell=shellRef.current
+            if(!shell)throw new Error('PhiOS XR spatial shell is not ready')
+            shell.setSpatialPreview(scene)
+            if(scene)shell.setView('worlds')
+          }}/>
           <div className="xr-assist-options">
             <label className="xr-gaze-toggle">
               <input type="checkbox" checked={gazeAssist}

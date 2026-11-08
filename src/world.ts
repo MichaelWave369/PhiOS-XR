@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import {normalizeSpatialScene,type SpatialScene} from './spatial-scene'
 import { createXRFrameObserver, type XRFrameReport } from './xr-frame-observer'
 import { createCozyRoom, applyCozyRoomMood } from './cozy-room'
 import { createGalleryRoom, GALLERY_EXHIBIT_COUNT } from './gallery-room'
@@ -36,6 +37,7 @@ export type SpatialShell = {
   registerPersonalArtwork: (item: PersonalArtInfo, canvas: HTMLCanvasElement) => void
   removePersonalArtwork: (id: string) => void
   showPersonalArtwork: (id: string) => void
+  setSpatialPreview: (scene: SpatialScene | null) => void
   dispose: () => void
 }
 
@@ -585,6 +587,55 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   toolGroup.visible = false
   workspace.add(toolGroup)
   let view: ViewMode = 'worlds'
+
+  // PhiSpatial R7: passive holographic scene consumer. Never added to hit targets.
+  // Rendering deliberately compresses the illustrative 12m lab volume into a
+  // stationary, non-collidable right-side exhibit; does not change headset pose.
+  const spatialPreview = new THREE.Group()
+  spatialPreview.name = 'PhiSpatial passive hologram'
+  spatialPreview.position.set(1.75, 1.55, -2.8)
+  spatialPreview.scale.setScalar(0.13)
+  spatialPreview.visible = false
+  workspace.add(spatialPreview)
+  let spatialPreviewLoaded = false
+
+  function clearSpatialPreviewMeshes() {
+    for(const child of [...spatialPreview.children]){
+      spatialPreview.remove(child)
+      if(child instanceof THREE.Mesh){
+        child.geometry.dispose()
+        const materials = Array.isArray(child.material)?child.material:[child.material]
+        materials.forEach(material=>material.dispose())
+      }
+    }
+    spatialPreviewLoaded = false
+  }
+  function syncSpatialPreviewVisibility() {
+    spatialPreview.visible = spatialPreviewLoaded && view === 'worlds' && !immersiveArActive
+  }
+  function setSpatialPreview(value: SpatialScene | null) {
+    const sceneData = value === null ? null : normalizeSpatialScene(value)
+    clearSpatialPreviewMeshes()
+    if(sceneData){
+      for(const node of sceneData.nodes){
+        const geometry = node.kind === 'sphere'
+          ? new THREE.IcosahedronGeometry(node.radius, 1)
+          : new THREE.OctahedronGeometry(node.radius, 0)
+        const material = new THREE.MeshBasicMaterial({
+          color:node.kind === 'sphere'?0x7fe5d5:0xd6a8ff,
+          wireframe:true,transparent:true,opacity:.72,
+          depthWrite:false,side:THREE.DoubleSide,
+        })
+        const mesh=new THREE.Mesh(geometry,material)
+        mesh.position.set(node.position.x,node.position.y,node.position.z)
+        mesh.userData.passiveSpatialNodeId = node.id
+        spatialPreview.add(mesh)
+      }
+      spatialPreviewLoaded = true
+    }
+    syncSpatialPreviewVisibility()
+  }
+
   cards.forEach((card) => { card.visible = false })
   resizeHandles.forEach((handle) => { handle.visible = false })
   details.visible = false
@@ -882,6 +933,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
     galleryHome.visible = mode === 'gallery'
     galleryNext.visible = mode === 'gallery'
     galleryTitle.visible = mode === 'gallery' && !immersiveArActive
+    syncSpatialPreviewVisibility()
     decor.visible = mode !== 'gallery' && !immersiveArActive
     galleryDecor.visible = mode === 'gallery' && !immersiveArActive
     if (mode === 'gallery') refreshGalleryExhibits()
@@ -1255,6 +1307,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       noteInput('SESSION ENDED')
       scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
       immersiveArActive = false
+      syncSpatialPreviewVisibility()
       decor.visible = view !== 'gallery'
       galleryDecor.visible = view === 'gallery'
       galleryTitle.visible = view === 'gallery'
@@ -1268,6 +1321,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       // WebXR AR requires a transparent scene background to expose passthrough.
       scene.background = mode === 'immersive-ar' ? null : new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
       immersiveArActive = mode === 'immersive-ar'
+      syncSpatialPreviewVisibility()
       decor.visible = view !== 'gallery' && !immersiveArActive
       galleryDecor.visible = view === 'gallery' && !immersiveArActive
       galleryTitle.visible = view === 'gallery' && !immersiveArActive
@@ -1280,6 +1334,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
       await session.end().catch(() => {})
       scene.background = new THREE.Color(HEARTH_MOOD_STYLES[mood].background)
       immersiveArActive = false
+      syncSpatialPreviewVisibility()
       decor.visible = view !== 'gallery'
       galleryDecor.visible = view === 'gallery'
       galleryTitle.visible = view === 'gallery'
@@ -1289,6 +1344,7 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
 
   function dispose() {
     renderer.setAnimationLoop(null)
+    clearSpatialPreviewMeshes()
     observer.disconnect()
     renderer.domElement.removeEventListener('pointerdown', onPointerDown)
     renderer.domElement.removeEventListener('pointermove', onPointerMove)
@@ -1319,5 +1375,5 @@ export function createSpatialShell(host: HTMLElement, callbacks: ShellCallbacks)
   callbacks.onMood(mood)
   callbacks.onArtwork(artwork)
   callbacks.onPersonalArt(null)
-  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, deckAction, setMood, setArtwork, registerPersonalArtwork, removePersonalArtwork, showPersonalArtwork, setFrameSampling: frameObserver.setEnabled, getFrameReport: frameObserver.report, dispose }
+  return { enter, select: setSelected, recenter, exit, arrange, reset, setView, setNote, clockAction, setGazeAssist, deckAction, setMood, setArtwork, registerPersonalArtwork, removePersonalArtwork, showPersonalArtwork, setFrameSampling: frameObserver.setEnabled, getFrameReport: frameObserver.report, setSpatialPreview, dispose }
 }
