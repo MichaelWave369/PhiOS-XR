@@ -10,6 +10,10 @@ An experimental, open-source WebXR workspace for Quest 3 and other compatible br
 
 PhiOS XR now has a **local, opt-in passive scene consumer** for PhiXRCommons R6 `phi.spatial.scene.v1` files. Open ΦSpace Dynamics, export a passive scene JSON, then use the **ΦSpatial Scene Bridge** file picker here. Review the title/nodes and explicitly confirm before the objects appear as a stationary holographic exhibit within the existing PhiOS XR 3D scene (desktop/VR Worlds mode only, hidden in MR passthrough). Nothing is sent over the network or given physics/portal/gesture authority. Scientific source labels remain unverified. See [R7 integration and Quest acceptance](docs/PHISPATIAL_SCENE_R7.md).
 
+## PhiSpatial first-run demo (R8)
+
+For a file-free Quest test, use **LOAD BUILT-IN ΦSPACE DEMO** in the ΦSpatial Scene Bridge, then **CONFIRM · DISPLAY GHOST SCENE**. Enter VR with VR Worlds active to inspect a stationary holographic exhibit containing four synthetic orbs and 18 invented Evidence Lens markers. This bundled versioned R6 scene is parsed by the same validator as imported JSON, but is not real experimental data or a substitute for headset acceptance. See [R8 first-run guide](docs/PHISPATIAL_R8_DEMO.md).
+
 ## Quick start
 
 Requirements: Node.js 22+ and npm.

@@ -1,4 +1,5 @@
 import {useState} from 'react'
+import {loadBundledSpatialDemo} from './spatial-scene-demo'
 import {
   MAX_SCENE_BYTES,parseSpatialScene,PROVENANCE_LABELS,
   type SpatialNode,type SpatialScene,
@@ -29,6 +30,17 @@ export function SpatialScenePanel({onPreview}:{
       setStatus('IMPORT REJECTED · '+(error instanceof Error?error.message:'Invalid scene file'))
     }
   }
+  function stageBundledDemo() {
+    try {
+      const candidate = loadBundledSpatialDemo()
+      setStaged(candidate)
+      setStatus('BUILT-IN DEMO STAGED · 4 simulated orbs + 18 invented evidence markers. '+
+        'Press CONFIRM to render. This is synthetic, not measured research.')
+    } catch(error) {
+      setStaged(null)
+      setStatus('BUNDLED DEMO REJECTED · '+(error instanceof Error ? error.message : 'Invalid bundled scene'))
+    }
+  }
   function confirm() {
     if(!staged)return
     try {
@@ -56,6 +68,11 @@ export function SpatialScenePanel({onPreview}:{
     <p>Import a PhiSpatial scene from a file, inspect its contents, then explicitly display
       non-colliding ghost shapes in the PhiOS XR Hearth. View in desktop or VR Worlds mode.
       The imported coordinates are illustrative, not calibrated measurements.</p>
+    <button type="button" className="spatial-demo-button" onClick={stageBundledDemo}>
+      LOAD BUILT-IN ΦSPACE DEMO · NO FILE NEEDED
+    </button>
+    <small>Quick headset test: load this synthetic example, confirm the scene, then ENTER VR.
+      The hologram is visible in VR Worlds; MR passthrough intentionally hides it.</small>
     <label className="spatial-scene-import">
       SELECT SCENE JSON (96 KB / 120 NODES MAX)
       <input type="file" accept=".json,application/json" onChange={event=>{

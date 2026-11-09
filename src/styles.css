@@ -248,3 +248,10 @@
 .spatial-node-data{display:grid;gap:6px;overflow-wrap:anywhere}
 .spatial-node-data strong{color:#d8b7ff;font:700 11px system-ui}
 .spatial-interchange-status{color:#a8eedb!important}
+
+/* R8: prominent, permissionless-to-stage but explicit-to-display bundled scene. */
+.spatial-interchange .spatial-demo-button{
+ background:#277267;color:#f1fff9;border-color:#9aefda;
+ font-weight:800;letter-spacing:.05em
+}
+.spatial-interchange .spatial-demo-button:hover{background:#358d7d}
