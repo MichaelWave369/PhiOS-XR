@@ -82,3 +82,40 @@ describe('PhiSpatial R6 passive scene consumer',()=>{
     expect(parseSpatialScene(JSON.stringify(a)).nodes).toEqual([])
   })
 })
+
+
+import {loadBundledSpatialDemo} from './spatial-scene-demo'
+
+describe('built-in PhiXRCommons demonstration can be staged without files or networking',()=>{
+  it('passes the strict versioned R6 parser and contains the exact demo node counts',()=>{
+    const scene=loadBundledSpatialDemo()
+    expect(scene.creator).toBe('phi-space-dynamics')
+    expect(scene.truth).toBe(SCENE_TRUTH)
+    expect(scene.nodes).toHaveLength(22)
+    expect(scene.nodes.filter(node=>node.kind==='sphere')).toHaveLength(4)
+    expect(scene.nodes.filter(node=>node.kind==='evidence-marker')).toHaveLength(18)
+  })
+  it('preserves only passive synthetic labels and no authority or source URLs',()=>{
+    const scene=loadBundledSpatialDemo()
+    expect(scene.nodes[0].position).toEqual({x:-2.8,y:4.4,z:-1})
+    const markers=scene.nodes.filter(node=>node.kind==='evidence-marker')
+    for(const marker of markers){
+      expect(marker.metadata?.kind).toBe('synthetic')
+      expect(marker.metadata?.sourceUrl).toBeNull()
+      expect(marker).not.toHaveProperty('velocity')
+      expect(marker).not.toHaveProperty('actions')
+      expect(marker).not.toHaveProperty('permissions')
+    }
+    expect(scene).not.toHaveProperty('gravity')
+    expect(scene).not.toHaveProperty('room')
+    expect(scene).not.toHaveProperty('gesture')
+  })
+  it('each load reparses and clones the fixture, preventing mutation across tests or sessions',()=>{
+    const first=loadBundledSpatialDemo()
+    first.nodes[0].position.x=0
+    first.nodes[4].metadata!.source='Tampered'
+    const second=loadBundledSpatialDemo()
+    expect(second.nodes[0].position.x).toBe(-2.8)
+    expect(second.nodes[4].metadata?.source).toBe('ΦSpace Dynamics built-in demonstration')
+  })
+})

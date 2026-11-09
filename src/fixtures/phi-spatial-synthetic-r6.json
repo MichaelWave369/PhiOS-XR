@@ -1,0 +1,422 @@
+{
+  "schema": "phi.spatial.scene.v1",
+  "truth": "UNVERIFIED_VISUALIZATION_ONLY",
+  "creator": "phi-space-dynamics",
+  "title": "PhiXRCommons R6 synthetic field-wave exhibit",
+  "coordinateFrame": {
+    "handedness": "right",
+    "upAxis": "Y",
+    "unit": "meter",
+    "origin": "illustrative-local"
+  },
+  "nodes": [
+    {
+      "id": "body-orb-1",
+      "kind": "sphere",
+      "label": "Simulated orb-1",
+      "position": {
+        "x": -2.8,
+        "y": 4.4,
+        "z": -1
+      },
+      "radius": 0.38,
+      "metadata": null
+    },
+    {
+      "id": "body-orb-2",
+      "kind": "sphere",
+      "label": "Simulated orb-2",
+      "position": {
+        "x": 0,
+        "y": 3.2,
+        "z": 0
+      },
+      "radius": 0.52,
+      "metadata": null
+    },
+    {
+      "id": "body-orb-3",
+      "kind": "sphere",
+      "label": "Simulated orb-3",
+      "position": {
+        "x": 2.7,
+        "y": 5,
+        "z": 1.2
+      },
+      "radius": 0.3,
+      "metadata": null
+    },
+    {
+      "id": "body-orb-4",
+      "kind": "sphere",
+      "label": "Simulated orb-4",
+      "position": {
+        "x": 0.5,
+        "y": 6.2,
+        "z": -2.3
+      },
+      "radius": 0.45,
+      "metadata": null
+    },
+    {
+      "id": "evidence-sample-1",
+      "kind": "evidence-marker",
+      "label": "Invented sample 1",
+      "position": {
+        "x": 2.3,
+        "y": 2.5,
+        "z": 0
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 15,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-2",
+      "kind": "evidence-marker",
+      "label": "Invented sample 2",
+      "position": {
+        "x": 2.584,
+        "y": 3.193,
+        "z": 0.941
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 21.428,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-3",
+      "kind": "evidence-marker",
+      "label": "Invented sample 3",
+      "position": {
+        "x": 2.451,
+        "y": 3.193,
+        "z": 2.057
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 24.848,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-4",
+      "kind": "evidence-marker",
+      "label": "Invented sample 4",
+      "position": {
+        "x": 1.15,
+        "y": 2.5,
+        "z": 1.992
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 23.66,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-5",
+      "kind": "evidence-marker",
+      "label": "Invented sample 5",
+      "position": {
+        "x": 0.478,
+        "y": 1.807,
+        "z": 2.708
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 18.42,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-6",
+      "kind": "evidence-marker",
+      "label": "Invented sample 6",
+      "position": {
+        "x": -0.556,
+        "y": 1.807,
+        "z": 3.151
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 11.58,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-7",
+      "kind": "evidence-marker",
+      "label": "Invented sample 7",
+      "position": {
+        "x": -1.15,
+        "y": 2.5,
+        "z": 1.992
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 6.34,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-8",
+      "kind": "evidence-marker",
+      "label": "Invented sample 8",
+      "position": {
+        "x": -2.107,
+        "y": 3.193,
+        "z": 1.768
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 5.152,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-9",
+      "kind": "evidence-marker",
+      "label": "Invented sample 9",
+      "position": {
+        "x": -3.007,
+        "y": 3.193,
+        "z": 1.094
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 8.572,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-10",
+      "kind": "evidence-marker",
+      "label": "Invented sample 10",
+      "position": {
+        "x": -2.3,
+        "y": 2.5,
+        "z": 0
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 15,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-11",
+      "kind": "evidence-marker",
+      "label": "Invented sample 11",
+      "position": {
+        "x": -2.584,
+        "y": 1.807,
+        "z": -0.941
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 21.428,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-12",
+      "kind": "evidence-marker",
+      "label": "Invented sample 12",
+      "position": {
+        "x": -2.451,
+        "y": 1.807,
+        "z": -2.057
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 24.848,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-13",
+      "kind": "evidence-marker",
+      "label": "Invented sample 13",
+      "position": {
+        "x": -1.15,
+        "y": 2.5,
+        "z": -1.992
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 23.66,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-14",
+      "kind": "evidence-marker",
+      "label": "Invented sample 14",
+      "position": {
+        "x": -0.478,
+        "y": 3.193,
+        "z": -2.708
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 18.42,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-15",
+      "kind": "evidence-marker",
+      "label": "Invented sample 15",
+      "position": {
+        "x": 0.556,
+        "y": 3.193,
+        "z": -3.151
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 11.58,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-16",
+      "kind": "evidence-marker",
+      "label": "Invented sample 16",
+      "position": {
+        "x": 1.15,
+        "y": 2.5,
+        "z": -1.992
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 6.34,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-17",
+      "kind": "evidence-marker",
+      "label": "Invented sample 17",
+      "position": {
+        "x": 2.107,
+        "y": 1.807,
+        "z": -1.768
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 5.152,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    },
+    {
+      "id": "evidence-sample-18",
+      "kind": "evidence-marker",
+      "label": "Invented sample 18",
+      "position": {
+        "x": 3.007,
+        "y": 1.807,
+        "z": -1.094
+      },
+      "radius": 0.12,
+      "metadata": {
+        "kind": "synthetic",
+        "unit": "arbitrary",
+        "value": 8.572,
+        "uncertainty": null,
+        "source": "ΦSpace Dynamics built-in demonstration",
+        "sourceUrl": null,
+        "method": "Invented sinusoidal values shown only to demonstrate rendering; no observations or scientific measurements"
+      }
+    }
+  ]
+}
